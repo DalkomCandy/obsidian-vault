@@ -44,6 +44,58 @@ function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
           <circle cx="12" cy="12" r="10" fill={color} stroke="white" strokeWidth="2.5" />
         </svg>
       )
+    case 'square':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="20" height="20" rx="4" fill={color} stroke="white" strokeWidth="2" />
+        </svg>
+      )
+    case 'diamond':
+      return (
+        <svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <rect
+            x="4"
+            y="4"
+            width="16"
+            height="16"
+            rx="2"
+            fill={color}
+            stroke="white"
+            strokeWidth="2"
+            transform="rotate(45 12 12)"
+          />
+        </svg>
+      )
+    case 'triangle':
+      return (
+        <svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2L24 22H2z" fill={color} stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'bookmark':
+      return (
+        <svg width="22" height="30" viewBox="0 0 22 30" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M2 1h18v27l-9-6.5L2 28z"
+            fill={color}
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    case 'home':
+      return (
+        <svg width="26" height="26" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M13 2L2 11v13h8v-8h6v8h8V11z"
+            fill={color}
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
     case 'pin':
     default:
       return (

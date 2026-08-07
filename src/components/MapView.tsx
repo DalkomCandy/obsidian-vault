@@ -16,7 +16,7 @@ interface MapViewProps {
   draftLocation: DraftLocation | null
   onLocationPicked: (result: SearchResult) => void
   onEditPlace: (place: Place) => void
-  onSaveDraft: (name: string, category: Category) => void
+  onSaveDraft: (category: Category) => void
   onCancelDraft: () => void
 }
 
@@ -34,13 +34,18 @@ export function MapView({
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const placesLib = useMapsLibrary('places')
 
-  // Only clicking an existing Google Maps POI icon opens the quick-add popup;
-  // clicking empty ground does nothing (no placeId on the event).
+  // Only clicking an existing Google Maps POI icon opens the quick-add popup.
+  // Clicking empty ground closes an open popup (if any); clicking a
+  // different POI replaces it with that POI's info.
   const handleClick = useCallback(
     async (e: MapMouseEvent) => {
       const placeId = e.detail.placeId
       const latLng = e.detail.latLng
-      if (!placeId || !latLng || !placesLib) return
+      if (!placeId || !latLng) {
+        if (draftLocation) onCancelDraft()
+        return
+      }
+      if (!placesLib) return
       e.stop()
 
       try {
@@ -56,7 +61,7 @@ export function MapView({
         onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
       }
     },
-    [onLocationPicked, placesLib],
+    [onLocationPicked, placesLib, draftLocation, onCancelDraft],
   )
 
   const markers = useMemo(

@@ -5,9 +5,20 @@ export type Category =
   | 'lodging'
   | 'shopping'
   | 'activity'
+  | 'transport'
   | 'etc'
 
-export type MarkerShape = 'pin' | 'star' | 'heart' | 'flag' | 'circle'
+export type MarkerShape =
+  | 'pin'
+  | 'star'
+  | 'heart'
+  | 'flag'
+  | 'circle'
+  | 'square'
+  | 'diamond'
+  | 'triangle'
+  | 'bookmark'
+  | 'home'
 
 export interface Trip {
   id: string
@@ -43,6 +54,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   lodging: '숙소',
   shopping: '쇼핑',
   activity: '액티비티',
+  transport: '교통',
   etc: '기타',
 }
 
@@ -53,6 +65,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   lodging: '#7c3aed',
   shopping: '#db2777',
   activity: '#16a34a',
+  transport: '#0891b2',
   etc: '#525252',
 }
 
@@ -63,10 +76,22 @@ export const CATEGORY_ORDER: Category[] = [
   'lodging',
   'shopping',
   'activity',
+  'transport',
   'etc',
 ]
 
-export const MARKER_SHAPES: MarkerShape[] = ['pin', 'star', 'heart', 'flag', 'circle']
+export const MARKER_SHAPES: MarkerShape[] = [
+  'pin',
+  'star',
+  'heart',
+  'flag',
+  'circle',
+  'square',
+  'diamond',
+  'triangle',
+  'bookmark',
+  'home',
+]
 
 export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   pin: '핀',
@@ -74,6 +99,11 @@ export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   heart: '하트',
   flag: '깃발',
   circle: '원',
+  square: '사각형',
+  diamond: '다이아몬드',
+  triangle: '삼각형',
+  bookmark: '북마크',
+  home: '집',
 }
 
 export const MARKER_COLOR_PALETTE = [

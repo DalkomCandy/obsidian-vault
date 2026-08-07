@@ -60,11 +60,11 @@ function App() {
     setDraftLocation({ lat: result.lat, lng: result.lng, name: result.name, address: result.address })
   }
 
-  const handleSaveDraft = (name: string, category: Category) => {
+  const handleSaveDraft = (category: Category) => {
     if (!selectedTripId || !draftLocation) return
     addPlace({
       tripId: selectedTripId,
-      name,
+      name: draftLocation.name,
       lat: draftLocation.lat,
       lng: draftLocation.lng,
       category,

@@ -13,16 +13,13 @@ export interface DraftLocation {
 
 interface QuickAddMarkerProps {
   draft: DraftLocation
-  onSave: (name: string, category: Category) => void
+  onSave: (category: Category) => void
   onCancel: () => void
 }
 
 export function QuickAddMarker({ draft, onSave, onCancel }: QuickAddMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
-  const [name, setName] = useState(draft.name)
   const [category, setCategory] = useState<Category>('sight')
-
-  const canSave = name.trim().length > 0
 
   return (
     <>
@@ -32,13 +29,7 @@ export function QuickAddMarker({ draft, onSave, onCancel }: QuickAddMarkerProps)
       {marker && (
         <InfoWindow anchor={marker} onCloseClick={onCancel}>
           <div className="quick-add">
-            <input
-              className="quick-add-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="장소 이름"
-              autoFocus
-            />
+            <div className="quick-add-name">{draft.name || '(이름 없음)'}</div>
             <div className="quick-add-categories">
               {CATEGORY_ORDER.map((c) => (
                 <button
@@ -54,15 +45,7 @@ export function QuickAddMarker({ draft, onSave, onCancel }: QuickAddMarkerProps)
               ))}
             </div>
             <div className="quick-add-actions">
-              <button type="button" onClick={onCancel}>
-                취소
-              </button>
-              <button
-                type="button"
-                className="primary"
-                disabled={!canSave}
-                onClick={() => onSave(name.trim(), category)}
-              >
+              <button type="button" className="primary" onClick={() => onSave(category)}>
                 저장
               </button>
             </div>

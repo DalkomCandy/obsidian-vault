@@ -15,7 +15,7 @@
 
 ## Google Maps API 키 설정
 
-1. [Google Cloud Console](https://console.cloud.google.com/google/maps-apis)에서 프로젝트를 만들고 **Maps JavaScript API**, **Places API**를 활성화합니다.
+1. [Google Cloud Console](https://console.cloud.google.com/google/maps-apis)에서 프로젝트를 만들고 **Maps JavaScript API**, **Places API**, **Directions API**를 활성화합니다. (Directions API는 저장한 두 장소 간 경로 찾기 기능에 필요합니다. 활성화하지 않으면 경로 화면에서 모든 이동수단이 "정보 없음"으로 표시됩니다.)
 2. API 키를 발급받습니다.
 3. 프로젝트 루트에 `.env` 파일을 만들고 (`.env.example` 참고):
 

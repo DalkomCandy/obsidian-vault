@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import type { Category, Place } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
-import { CategoryFilter } from './CategoryFilter'
 import { SettingsMenu } from './SettingsMenu'
 import { CategoryStylePicker } from './CategoryStylePicker'
 import { AddCategoryForm } from './AddCategoryForm'
@@ -24,23 +23,16 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const setSelectedRegion = usePlaceStore((s) => s.setSelectedRegion)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const setSelectedTripId = usePlaceStore((s) => s.setSelectedTripId)
-  const selectedCategories = usePlaceStore((s) => s.selectedCategories)
-  const toggleCategoryFilter = usePlaceStore((s) => s.toggleCategoryFilter)
-  const setAllCategoriesSelected = usePlaceStore((s) => s.setAllCategoriesSelected)
   const addTrip = usePlaceStore((s) => s.addTrip)
   const renameTrip = usePlaceStore((s) => s.renameTrip)
   const removeTrip = usePlaceStore((s) => s.removeTrip)
   const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
   const setActiveAddCategory = usePlaceStore((s) => s.setActiveAddCategory)
+  const removeCategory = usePlaceStore((s) => s.removeCategory)
 
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [addingCategory, setAddingCategory] = useState(false)
-
-  const regions = useMemo(
-    () => [...new Set(trips.map((t) => t.region))].sort((a, b) => a.localeCompare(b, 'ko')),
-    [trips],
-  )
 
   const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 
@@ -122,27 +114,8 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
-        <div className="sidebar-header-top">
-          <h1>여행 지도</h1>
-          <SettingsMenu />
-        </div>
-        <p className="subtitle">전체 → 지역 → 여행 순으로 관리해요</p>
-      </div>
-
-      <div className="region-filter">
-        <select
-          className="region-select"
-          value={selectedRegion ?? ''}
-          onChange={(e) => setSelectedRegion(e.target.value || null)}
-        >
-          <option value="">전체</option>
-          {regions.map((region) => (
-            <option key={region} value={region}>
-              {region}
-            </option>
-          ))}
-        </select>
+      <div className="sidebar-header-top">
+        <SettingsMenu />
       </div>
 
       {selectedRegion && (
@@ -159,12 +132,6 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
           onDeleteTrip={removeTrip}
         />
       )}
-
-      <CategoryFilter
-        selected={selectedCategories}
-        onToggle={toggleCategoryFilter}
-        onSetAll={setAllCategoriesSelected}
-      />
 
       <div className="add-category-row">
         {addingCategory ? (
@@ -215,9 +182,26 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
                   >
                     🎨
                   </button>
+                  {categoryOrder.length > 1 && (
+                    <button
+                      className="category-delete-btn"
+                      title="카테고리 삭제"
+                      onClick={() => {
+                        const message =
+                          list.length > 0
+                            ? `"${categoryLabels[category]}" 카테고리를 삭제할까요? 이 카테고리에 있는 ${list.length}개 장소는 다른 카테고리로 옮겨져요.`
+                            : `"${categoryLabels[category]}" 카테고리를 삭제할까요?`
+                        if (confirm(message)) removeCategory(category)
+                      }}
+                    >
+                      🗑
+                    </button>
+                  )}
                 </span>
               </div>
-              {styleEditCategory === category && <CategoryStylePicker category={category} />}
+              {styleEditCategory === category && (
+                <CategoryStylePicker category={category} onClose={() => setStyleEditCategory(null)} />
+              )}
               <ul>{list.map(renderPlaceRow)}</ul>
             </div>
           ))}

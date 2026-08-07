@@ -165,6 +165,7 @@ interface PlaceStore {
   setCategoryStyle: (category: Category, style: CategoryStyle) => void
   setActiveAddCategory: (category: Category | null) => void
   addCategory: (label: string, style: CategoryStyle) => Category
+  removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
 }
 
@@ -300,6 +301,24 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     })
     persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
     return id
+  },
+
+  removeCategory: (category) => {
+    const categoryOrder = get().categoryOrder.filter((c) => c !== category)
+    if (categoryOrder.length === 0) return
+    const fallback = categoryOrder.includes('etc') ? 'etc' : categoryOrder[0]
+
+    const places = get().places.map((p) => (p.category === category ? { ...p, category: fallback } : p))
+    const categoryLabels = { ...get().categoryLabels }
+    delete categoryLabels[category]
+    const categoryStyles = { ...get().categoryStyles }
+    delete categoryStyles[category]
+    const selectedCategories = get().selectedCategories.filter((c) => c !== category)
+    const activeAddCategory = get().activeAddCategory === category ? null : get().activeAddCategory
+
+    set({ categoryOrder, categoryLabels, categoryStyles, places, selectedCategories, activeAddCategory })
+    persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
+    persistPlaces(places)
   },
 
   setIconScale: (scale) => {

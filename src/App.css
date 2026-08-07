@@ -372,20 +372,90 @@
   background: var(--chip-bg);
 }
 
+.category-delete-btn {
+  border: none;
+  background: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.category-delete-btn:hover {
+  background: var(--chip-bg);
+  opacity: 1;
+}
+
+.style-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
 .category-style-picker {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 10px 8px;
-  margin: 0 0 8px;
-  border-radius: 8px;
-  background: var(--chip-bg);
+  gap: 10px;
+  padding: 16px;
+  width: min(320px, calc(100vw - 32px));
+  border-radius: 12px;
+  background: var(--panel-bg);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .category-style-row {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.style-tabs {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.style-tab {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12px;
+}
+
+.style-tab.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.google-icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.google-icon-empty {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.google-icon-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: white;
+  border: 1px solid #d1d5db;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .category-style-preview {
@@ -731,6 +801,33 @@
   background: #2563eb;
   border-color: #2563eb;
   color: #ffffff;
+}
+
+.map-control-panel {
+  position: absolute;
+  bottom: 104px;
+  right: 12px;
+  z-index: 10;
+  width: 220px;
+  max-height: calc(100% - 130px);
+  overflow-y: auto;
+  padding: 12px;
+  border-radius: 16px;
+  background: var(--panel-bg);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.map-control-panel .region-select {
+  width: 100%;
+}
+
+.map-control-panel .category-filter {
+  padding: 0;
+  border-bottom: none;
+  margin-bottom: 0;
 }
 
 .map-hint {

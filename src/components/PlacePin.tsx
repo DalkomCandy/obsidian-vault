@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import type { MarkerShape } from '../types'
 
 interface PlacePinProps {
@@ -6,6 +6,28 @@ interface PlacePinProps {
   shape: MarkerShape
   faded: boolean
   scale?: number
+  iconUrl?: string
+}
+
+/** White circular badge holding a Google-provided icon image; falls back to the vector shape if the image fails to load. */
+function GoogleIconBadge({ iconUrl, onError }: { iconUrl: string; onError: () => void }) {
+  return (
+    <div
+      style={{
+        width: 28,
+        height: 28,
+        borderRadius: '50%',
+        background: 'white',
+        border: '1.5px solid #d1d5db',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        boxSizing: 'border-box',
+      }}
+    >
+      <img src={iconUrl} width={18} height={18} alt="" onError={onError} />
+    </div>
+  )
 }
 
 /** Colored circle badge with a white glyph inside — used for semantic (non-geometric) icons. */
@@ -170,7 +192,10 @@ function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
   }
 }
 
-export function PlacePin({ color, shape, faded, scale = 1 }: PlacePinProps) {
+export function PlacePin({ color, shape, faded, scale = 1, iconUrl }: PlacePinProps) {
+  const [iconFailed, setIconFailed] = useState(false)
+  const showGoogleIcon = Boolean(iconUrl) && !iconFailed
+
   return (
     <div
       style={{
@@ -180,7 +205,11 @@ export function PlacePin({ color, shape, faded, scale = 1 }: PlacePinProps) {
         transformOrigin: 'bottom center',
       }}
     >
-      <ShapeSvg color={color} shape={shape} />
+      {showGoogleIcon ? (
+        <GoogleIconBadge iconUrl={iconUrl!} onError={() => setIconFailed(true)} />
+      ) : (
+        <ShapeSvg color={color} shape={shape} />
+      )}
     </div>
   )
 }

@@ -52,7 +52,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
 
         <div className="icon-picker">
           <div className="icon-preview">
-            <PlacePin color={style.color} shape={style.shape} faded={false} />
+            <PlacePin color={style.color} shape={style.shape} iconUrl={style.iconUrl} faded={false} />
           </div>
           <label className="icon-picker-controls">
             카테고리

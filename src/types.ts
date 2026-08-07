@@ -42,6 +42,10 @@ export interface Place {
 export interface CategoryStyle {
   color: string
   shape: MarkerShape
+  // Optional Google-provided official place icon (image URL). When set, this
+  // is preferred over `shape` for rendering; `shape` stays as a fallback in
+  // case the image fails to load.
+  iconUrl?: string
 }
 
 export const DEFAULT_CATEGORY_ORDER: Category[] = [
@@ -128,6 +132,32 @@ export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   bag: '가방',
   camera: '카메라',
   car: '자동차',
+}
+
+// Google's official Place API icon assets (the small pin-shaped glyphs shown
+// on Google Maps itself). Not all names are guaranteed to exist for every
+// account/region, so the picker tries a few candidates per category and
+// silently drops any that fail to load.
+export const GOOGLE_ICON_BASE_URL = 'https://maps.gstatic.com/mapfiles/place_api/icons/v2'
+
+export const CATEGORY_GOOGLE_ICON_CANDIDATES: Record<Category, string[]> = {
+  sight: ['museum', 'civic_building', 'generic_recreational', 'worship_general'],
+  food: ['restaurant'],
+  cafe: ['cafe'],
+  lodging: ['lodging'],
+  shopping: ['shopping'],
+  activity: ['generic_recreational', 'bar'],
+  transport: ['bus', 'gas_station'],
+  etc: [],
+}
+
+export function googleIconCandidatesFor(category: Category): string[] {
+  const specific = CATEGORY_GOOGLE_ICON_CANDIDATES[category] ?? []
+  return [...new Set([...specific, 'generic'])]
+}
+
+export function googleIconUrl(name: string): string {
+  return `${GOOGLE_ICON_BASE_URL}/${name}_pinlet.svg`
 }
 
 export const MARKER_COLOR_PALETTE = [

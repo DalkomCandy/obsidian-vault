@@ -32,7 +32,7 @@ export function PlaceMarker({
   return (
     <>
       <AdvancedMarker ref={markerRef} position={{ lat: place.lat, lng: place.lng }} onClick={onMarkerClick}>
-        <PlacePin color={style.color} shape={style.shape} faded={faded} scale={iconScale} />
+        <PlacePin color={style.color} shape={style.shape} iconUrl={style.iconUrl} faded={faded} scale={iconScale} />
       </AdvancedMarker>
       {isOpen && marker && (
         <InfoWindow anchor={marker} onCloseClick={() => onOpenChange(false)}>

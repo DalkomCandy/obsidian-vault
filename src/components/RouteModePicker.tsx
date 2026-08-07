@@ -49,7 +49,10 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
               distanceText: leg.distance?.text ?? '',
             },
           ] as const
-        } catch {
+        } catch (err) {
+          // Surfaced in devtools so a config problem (e.g. Directions API not
+          // enabled on the key) is distinguishable from "genuinely no route".
+          console.error(`[경로] ${mode} 요청 실패`, err)
           return [mode, 'unavailable'] as const
         }
       }),

@@ -5,9 +5,10 @@ import { Sidebar } from './components/Sidebar'
 import { PlaceForm, draftFromPlace, type PlaceDraft } from './components/PlaceForm'
 import type { SearchResult } from './components/SearchBox'
 import type { DraftLocation } from './components/QuickAddMarker'
+import type { RouteOption } from './components/RouteModePicker'
 import { usePlaceStore } from './store/usePlaceStore'
 import { GOOGLE_MAPS_API_KEY } from './lib/googleMaps'
-import type { Category, Place } from './types'
+import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS, type Category, type Place, type TravelMode } from './types'
 import './App.css'
 
 const NEEDS_TRIP_HINT = '먼저 지역과 여행(날짜)을 선택하거나 만들어주세요'
@@ -25,6 +26,7 @@ function App() {
   const [editDraft, setEditDraft] = useState<PlaceDraft | null>(null)
   const [draftLocation, setDraftLocation] = useState<DraftLocation | null>(null)
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null)
+  const [routeOriginId, setRouteOriginId] = useState<string | null>(null)
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
   const [hint, setHint] = useState<string | null>(null)
   const hintTimer = useRef<number | undefined>(undefined)
@@ -93,6 +95,23 @@ function App() {
     setEditDraft(null)
   }
 
+  const handleSetRouteOrigin = (place: Place | null) => {
+    setRouteOriginId(place?.id ?? null)
+    if (place) showHint('다른 장소를 클릭해서 경로를 확인하세요')
+  }
+
+  const handleRouteCommitted = (
+    originName: string,
+    destinationId: string,
+    mode: TravelMode,
+    option: RouteOption,
+  ) => {
+    const destination = places.find((p) => p.id === destinationId)
+    if (!destination) return
+    const line = `${TRAVEL_MODE_EMOJI[mode]} ${originName}에서 ${TRAVEL_MODE_LABELS[mode]} ${option.durationText} (${option.distanceText})`
+    updatePlace(destinationId, { memo: destination.memo ? `${destination.memo}\n${line}` : line })
+  }
+
   if (!GOOGLE_MAPS_API_KEY) {
     return (
       <div className="api-key-notice">
@@ -107,7 +126,7 @@ function App() {
   }
 
   return (
-    <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places']}>
+    <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places', 'routes']}>
       <div className="app-shell">
         <Sidebar places={visiblePlaces} onEditPlace={handleEditPlace} onFocusPlace={handleFocusPlace} />
         <main className="map-pane">
@@ -124,6 +143,9 @@ function App() {
             onEditPlace={handleEditPlace}
             onSaveDraft={handleSaveDraft}
             onCancelDraft={() => setDraftLocation(null)}
+            routeOriginId={routeOriginId}
+            onSetRouteOrigin={handleSetRouteOrigin}
+            onRouteCommitted={handleRouteCommitted}
           />
         </main>
         {editDraft && (

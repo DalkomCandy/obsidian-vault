@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react'
 import type { Category } from '../types'
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 
 interface CategoryFilterProps {
@@ -10,8 +9,10 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ selected, onToggle, onSetAll }: CategoryFilterProps) {
+  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
+  const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const categoryStyles = usePlaceStore((s) => s.categoryStyles)
-  const allSelected = selected.length === CATEGORY_ORDER.length
+  const allSelected = selected.length === categoryOrder.length
 
   return (
     <div className="category-filter">
@@ -22,7 +23,7 @@ export function CategoryFilter({ selected, onToggle, onSetAll }: CategoryFilterP
         </button>
       </div>
       <div className="category-filter-chips">
-        {CATEGORY_ORDER.map((category) => {
+        {categoryOrder.map((category) => {
           const active = selected.includes(category)
           return (
             <button
@@ -33,7 +34,7 @@ export function CategoryFilter({ selected, onToggle, onSetAll }: CategoryFilterP
               onClick={() => onToggle(category)}
             >
               <span className="dot" />
-              {CATEGORY_LABELS[category]}
+              {categoryLabels[category]}
             </button>
           )
         })}

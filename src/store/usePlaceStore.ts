@@ -1,10 +1,15 @@
 import { create } from 'zustand'
 import type { Category, CategoryStyle, Place, Trip } from '../types'
-import { CATEGORY_ORDER, DEFAULT_CATEGORY_STYLES, formatTripLabel } from '../types'
+import {
+  DEFAULT_CATEGORY_LABELS,
+  DEFAULT_CATEGORY_ORDER,
+  DEFAULT_CATEGORY_STYLES,
+  formatTripLabel,
+} from '../types'
 
 const TRIPS_KEY = 'travel-map.trips'
 const PLACES_KEY = 'travel-map.places'
-const CATEGORY_STYLES_KEY = 'travel-map.categoryStyles'
+const CATEGORIES_KEY = 'travel-map.categories'
 
 interface LegacyPlace {
   id: string
@@ -15,6 +20,12 @@ interface LegacyPlace {
   category: Category
   memo: string
   createdAt: string
+}
+
+interface CategoriesState {
+  order: Category[]
+  labels: Record<Category, string>
+  styles: Record<Category, CategoryStyle>
 }
 
 function isLegacyPlace(p: unknown): p is LegacyPlace {
@@ -91,13 +102,20 @@ function loadTripsAndPlaces(): { trips: Trip[]; places: Place[] } {
   }
 }
 
-function loadCategoryStyles(): Record<Category, CategoryStyle> {
+function loadCategories(): CategoriesState {
   try {
-    const raw = localStorage.getItem(CATEGORY_STYLES_KEY)
-    const parsed: Partial<Record<Category, CategoryStyle>> = raw ? JSON.parse(raw) : {}
-    return { ...DEFAULT_CATEGORY_STYLES, ...parsed }
+    const raw = localStorage.getItem(CATEGORIES_KEY)
+    if (!raw) {
+      return { order: [...DEFAULT_CATEGORY_ORDER], labels: { ...DEFAULT_CATEGORY_LABELS }, styles: { ...DEFAULT_CATEGORY_STYLES } }
+    }
+    const parsed: Partial<CategoriesState> = JSON.parse(raw)
+    return {
+      order: parsed.order ?? [...DEFAULT_CATEGORY_ORDER],
+      labels: { ...DEFAULT_CATEGORY_LABELS, ...parsed.labels },
+      styles: { ...DEFAULT_CATEGORY_STYLES, ...parsed.styles },
+    }
   } catch {
-    return { ...DEFAULT_CATEGORY_STYLES }
+    return { order: [...DEFAULT_CATEGORY_ORDER], labels: { ...DEFAULT_CATEGORY_LABELS }, styles: { ...DEFAULT_CATEGORY_STYLES } }
   }
 }
 
@@ -109,13 +127,15 @@ function persistPlaces(places: Place[]) {
   localStorage.setItem(PLACES_KEY, JSON.stringify(places))
 }
 
-function persistCategoryStyles(styles: Record<Category, CategoryStyle>) {
-  localStorage.setItem(CATEGORY_STYLES_KEY, JSON.stringify(styles))
+function persistCategories(state: CategoriesState) {
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(state))
 }
 
 interface PlaceStore {
   trips: Trip[]
   places: Place[]
+  categoryOrder: Category[]
+  categoryLabels: Record<Category, string>
   categoryStyles: Record<Category, CategoryStyle>
   selectedRegion: string | null
   selectedTripId: string | null
@@ -135,17 +155,21 @@ interface PlaceStore {
   setAllCategoriesSelected: (selected: boolean) => void
   setCategoryStyle: (category: Category, style: CategoryStyle) => void
   setActiveAddCategory: (category: Category | null) => void
+  addCategory: (label: string, style: CategoryStyle) => Category
 }
 
 const initial = loadTripsAndPlaces()
+const initialCategories = loadCategories()
 
 export const usePlaceStore = create<PlaceStore>((set, get) => ({
   trips: initial.trips,
   places: initial.places,
-  categoryStyles: loadCategoryStyles(),
+  categoryOrder: initialCategories.order,
+  categoryLabels: initialCategories.labels,
+  categoryStyles: initialCategories.styles,
   selectedRegion: null,
   selectedTripId: null,
-  selectedCategories: [...CATEGORY_ORDER],
+  selectedCategories: [...initialCategories.order],
   activeAddCategory: null,
 
   addTrip: (region, date) => {
@@ -232,16 +256,31 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   },
 
   setAllCategoriesSelected: (selected) => {
-    set({ selectedCategories: selected ? [...CATEGORY_ORDER] : [] })
+    set({ selectedCategories: selected ? [...get().categoryOrder] : [] })
   },
 
   setCategoryStyle: (category, style) => {
     const categoryStyles = { ...get().categoryStyles, [category]: style }
     set({ categoryStyles })
-    persistCategoryStyles(categoryStyles)
+    persistCategories({ order: get().categoryOrder, labels: get().categoryLabels, styles: categoryStyles })
   },
 
   setActiveAddCategory: (category) => {
     set({ activeAddCategory: get().activeAddCategory === category ? null : category })
+  },
+
+  addCategory: (label, style) => {
+    const id = `custom-${crypto.randomUUID()}`
+    const categoryOrder = [...get().categoryOrder, id]
+    const categoryLabels = { ...get().categoryLabels, [id]: label }
+    const categoryStyles = { ...get().categoryStyles, [id]: style }
+    set({
+      categoryOrder,
+      categoryLabels,
+      categoryStyles,
+      selectedCategories: [...get().selectedCategories, id],
+    })
+    persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
+    return id
   },
 }))

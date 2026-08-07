@@ -1,6 +1,6 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Map, useMapsLibrary, type MapMouseEvent } from '@vis.gl/react-google-maps'
-import type { Category, Place } from '../types'
+import type { Category, Place, TravelMode } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { GOOGLE_MAPS_MAP_ID, DEFAULT_CENTER, DEFAULT_ZOOM } from '../lib/googleMaps'
 import { MapController } from './MapController'
@@ -8,6 +8,8 @@ import { PlaceMarker } from './PlaceMarker'
 import { SearchBox } from './SearchBox'
 import type { SearchResult } from './SearchBox'
 import { QuickAddMarker, type DraftLocation } from './QuickAddMarker'
+import { RouteModePicker, type RouteOption } from './RouteModePicker'
+import { RouteLine, type ActiveRoute } from './RouteLine'
 
 interface MapViewProps {
   places: Place[]
@@ -21,6 +23,9 @@ interface MapViewProps {
   onEditPlace: (place: Place) => void
   onSaveDraft: (category: Category) => void
   onCancelDraft: () => void
+  routeOriginId: string | null
+  onSetRouteOrigin: (place: Place | null) => void
+  onRouteCommitted: (originName: string, destinationId: string, mode: TravelMode, option: RouteOption) => void
 }
 
 export function MapView({
@@ -35,13 +40,25 @@ export function MapView({
   onEditPlace,
   onSaveDraft,
   onCancelDraft,
+  routeOriginId,
+  onSetRouteOrigin,
+  onRouteCommitted,
 }: MapViewProps) {
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const placesLib = useMapsLibrary('places')
 
+  const [routeCandidate, setRouteCandidate] = useState<{ origin: Place; destination: Place } | null>(null)
+  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
+
+  const clearRouteState = useCallback(() => {
+    setRouteCandidate(null)
+    setActiveRoute(null)
+    if (routeOriginId) onSetRouteOrigin(null)
+  }, [routeOriginId, onSetRouteOrigin])
+
   // Only clicking an existing Google Maps POI icon opens the quick-add popup.
-  // Clicking empty ground closes whatever popup is open (draft or a saved
-  // place); clicking a different POI/marker replaces it with that one.
+  // Clicking empty ground closes whatever popup/route state is open;
+  // clicking a different POI/marker replaces it with that one.
   const handleClick = useCallback(
     async (e: MapMouseEvent) => {
       const placeId = e.detail.placeId
@@ -49,6 +66,7 @@ export function MapView({
       if (!placeId || !latLng) {
         if (draftLocation) onCancelDraft()
         if (openPlaceId) onOpenPlaceChange(null)
+        clearRouteState()
         return
       }
       if (!placesLib) return
@@ -73,7 +91,7 @@ export function MapView({
         onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
       }
     },
-    [onLocationPicked, placesLib, draftLocation, onCancelDraft, openPlaceId, onOpenPlaceChange],
+    [onLocationPicked, placesLib, draftLocation, onCancelDraft, openPlaceId, onOpenPlaceChange, clearRouteState],
   )
 
   const markers = useMemo(
@@ -86,15 +104,44 @@ export function MapView({
             place={place}
             faded={faded}
             isOpen={place.id === openPlaceId}
+            onMarkerClick={() => {
+              if (routeOriginId && place.id !== routeOriginId) {
+                const origin = places.find((p) => p.id === routeOriginId)
+                if (origin) {
+                  setActiveRoute(null)
+                  setRouteCandidate({ origin, destination: place })
+                  onSetRouteOrigin(null)
+                }
+                return
+              }
+              onOpenPlaceChange(place.id === openPlaceId ? null : place.id)
+              if (draftLocation) onCancelDraft()
+            }}
             onOpenChange={(open) => {
               onOpenPlaceChange(open ? place.id : null)
               if (open && draftLocation) onCancelDraft()
             }}
             onEditPlace={onEditPlace}
+            onRouteFrom={(p) => {
+              onOpenPlaceChange(null)
+              setRouteCandidate(null)
+              setActiveRoute(null)
+              onSetRouteOrigin(p)
+            }}
           />
         )
       }),
-    [places, selectedTripId, openPlaceId, onOpenPlaceChange, draftLocation, onCancelDraft, onEditPlace],
+    [
+      places,
+      selectedTripId,
+      openPlaceId,
+      onOpenPlaceChange,
+      draftLocation,
+      onCancelDraft,
+      onEditPlace,
+      routeOriginId,
+      onSetRouteOrigin,
+    ],
   )
 
   return (
@@ -118,6 +165,19 @@ export function MapView({
             onCancel={onCancelDraft}
           />
         )}
+        {routeCandidate && (
+          <RouteModePicker
+            origin={routeCandidate.origin}
+            destination={routeCandidate.destination}
+            onSelect={(mode, option) => {
+              setActiveRoute({ mode, path: option.path, durationText: option.durationText, distanceText: option.distanceText })
+              onRouteCommitted(routeCandidate.origin.name, routeCandidate.destination.id, mode, option)
+              setRouteCandidate(null)
+            }}
+            onCancel={() => setRouteCandidate(null)}
+          />
+        )}
+        {activeRoute && <RouteLine route={activeRoute} onClose={() => setActiveRoute(null)} />}
       </Map>
     </>
   )

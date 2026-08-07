@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { Category, Place } from '../types'
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
 import { CategoryFilter } from './CategoryFilter'
 import { ThemeToggle } from './ThemeToggle'
 import { CategoryStylePicker } from './CategoryStylePicker'
 import { IconSizeControl } from './IconSizeControl'
+import { AddCategoryForm } from './AddCategoryForm'
 
 interface SidebarProps {
   places: Place[]
@@ -17,6 +17,8 @@ interface SidebarProps {
 export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const removePlace = usePlaceStore((s) => s.removePlace)
   const reorderPlace = usePlaceStore((s) => s.reorderPlace)
+  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
+  const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const trips = usePlaceStore((s) => s.trips)
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
   const setSelectedRegion = usePlaceStore((s) => s.setSelectedRegion)
@@ -33,6 +35,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
 
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [addingCategory, setAddingCategory] = useState(false)
 
   const regions = useMemo(
     () => [...new Set(trips.map((t) => t.region))].sort((a, b) => a.localeCompare(b, 'ko')),
@@ -49,8 +52,8 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
       list.push(place)
       map.set(place.category, list)
     }
-    return CATEGORY_ORDER.filter((c) => map.has(c)).map((c) => [c, map.get(c)!] as const)
-  }, [places])
+    return categoryOrder.filter((c) => map.has(c)).map((c) => [c, map.get(c)!] as const)
+  }, [places, categoryOrder])
 
   const groupedByTrip = useMemo(() => {
     const map = new Map<string, Place[]>()
@@ -166,6 +169,16 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
         onSetAll={setAllCategoriesSelected}
       />
 
+      <div className="add-category-row">
+        {addingCategory ? (
+          <AddCategoryForm onDone={() => setAddingCategory(false)} />
+        ) : (
+          <button type="button" className="add-category-btn" onClick={() => setAddingCategory(true)}>
+            + 카테고리 추가
+          </button>
+        )}
+      </div>
+
       <div className="place-list">
         {places.length === 0 && (
           <p className="empty-state">
@@ -184,7 +197,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
                   title="선택하면 새로 저장하는 장소가 이 카테고리로 들어가요"
                   onClick={() => setActiveAddCategory(category)}
                 >
-                  {CATEGORY_LABELS[category]}
+                  {categoryLabels[category]}
                 </button>
                 <span className="region-title-right">
                   <span className="region-count">{list.length}개</span>

@@ -1,12 +1,6 @@
-export type Category =
-  | 'sight'
-  | 'food'
-  | 'cafe'
-  | 'lodging'
-  | 'shopping'
-  | 'activity'
-  | 'transport'
-  | 'etc'
+// A category id. The 8 built-ins below are just the seed data --
+// users can add their own via the sidebar, so this isn't a fixed union.
+export type Category = string
 
 export type MarkerShape =
   | 'pin'
@@ -50,18 +44,7 @@ export interface CategoryStyle {
   shape: MarkerShape
 }
 
-export const CATEGORY_LABELS: Record<Category, string> = {
-  sight: '관광지',
-  food: '음식점',
-  cafe: '카페',
-  lodging: '숙소',
-  shopping: '쇼핑',
-  activity: '액티비티',
-  transport: '교통',
-  etc: '기타',
-}
-
-export const CATEGORY_ORDER: Category[] = [
+export const DEFAULT_CATEGORY_ORDER: Category[] = [
   'sight',
   'food',
   'cafe',
@@ -71,6 +54,17 @@ export const CATEGORY_ORDER: Category[] = [
   'transport',
   'etc',
 ]
+
+export const DEFAULT_CATEGORY_LABELS: Record<Category, string> = {
+  sight: '관광지',
+  food: '음식점',
+  cafe: '카페',
+  lodging: '숙소',
+  shopping: '쇼핑',
+  activity: '액티비티',
+  transport: '교통',
+  etc: '기타',
+}
 
 // Sensible starting point for each category's marker. Fully editable at
 // runtime via the bulk "카테고리 스타일" picker in the sidebar.
@@ -146,6 +140,20 @@ export const MARKER_COLOR_PALETTE = [
   '#0891b2',
   '#525252',
 ]
+
+export type TravelMode = 'WALKING' | 'DRIVING' | 'TRANSIT'
+
+export const TRAVEL_MODE_LABELS: Record<TravelMode, string> = {
+  WALKING: '도보',
+  DRIVING: '자동차',
+  TRANSIT: '대중교통',
+}
+
+export const TRAVEL_MODE_EMOJI: Record<TravelMode, string> = {
+  WALKING: '🚶',
+  DRIVING: '🚗',
+  TRANSIT: '🚌',
+}
 
 export function formatTripLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split('-')

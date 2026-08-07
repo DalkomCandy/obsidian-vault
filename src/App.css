@@ -387,6 +387,142 @@
   cursor: not-allowed;
 }
 
+.category-style-row-end {
+  justify-content: flex-end;
+}
+
+.category-style-row-end button {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 5px 8px;
+}
+
+.swatch-custom {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px dashed var(--border);
+  background: var(--swatch-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+
+.swatch-custom input[type='color'] {
+  position: absolute;
+  inset: -4px;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* ---------- Add category ---------- */
+
+.add-category-row {
+  padding: 0 20px 12px;
+}
+
+.add-category-btn {
+  width: 100%;
+  border: 1px dashed var(--border);
+  background: none;
+  color: var(--text-muted);
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12.5px;
+}
+
+.add-category-btn:hover {
+  background: var(--chip-bg);
+  color: var(--text);
+}
+
+.add-category-name {
+  flex: 1;
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- Route picker ---------- */
+
+.route-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.route-picker-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #0b0d12;
+}
+
+.route-picker-loading {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.route-picker-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-picker-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  color: #1f2430;
+}
+
+.route-picker-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.route-picker-emoji {
+  font-size: 15px;
+}
+
+.route-picker-label {
+  flex: 1;
+  text-align: left;
+}
+
+.route-picker-duration {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.route-duration-label {
+  background: var(--bg);
+  color: var(--text);
+  border: 2px solid;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+}
+
 .region-count {
   font-weight: 400;
   font-size: 12px;

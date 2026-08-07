@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import type { Category } from '../types'
-import { CATEGORY_RELEVANT_SHAPES, MARKER_COLOR_PALETTE, MARKER_SHAPE_LABELS } from '../types'
+import { CATEGORY_RELEVANT_SHAPES, MARKER_COLOR_PALETTE, MARKER_SHAPES, MARKER_SHAPE_LABELS } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
@@ -15,7 +15,7 @@ export function CategoryStylePicker({ category }: CategoryStylePickerProps) {
   const [shape, setShape] = useState(current.shape)
   const [color, setColor] = useState(current.color)
 
-  const shapes = CATEGORY_RELEVANT_SHAPES[category]
+  const shapes = CATEGORY_RELEVANT_SHAPES[category] ?? MARKER_SHAPES
   const dirty = shape !== current.shape || color !== current.color
 
   return (
@@ -49,6 +49,9 @@ export function CategoryStylePicker({ category }: CategoryStylePickerProps) {
             title={c}
           />
         ))}
+        <label className="swatch-custom" style={{ '--swatch-color': color } as CSSProperties} title="직접 선택 (RGB)">
+          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+        </label>
       </div>
       <button
         type="button"

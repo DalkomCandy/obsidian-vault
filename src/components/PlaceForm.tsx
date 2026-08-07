@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { Category, Place } from '../types'
-import { CATEGORY_LABELS } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
@@ -26,6 +25,8 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
 
   const place = usePlaceStore((s) => s.places.find((p) => p.id === draft.id))
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place?.tripId))
+  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
+  const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const style = usePlaceStore((s) => s.categoryStyles[category])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -55,10 +56,10 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
           </div>
           <label className="icon-picker-controls">
             카테고리
-            <select value={category} onChange={(e) => setCategory(e.target.value as Category)}>
-              {Object.entries(CATEGORY_LABELS).map(([value, label]) => (
+            <select value={category} onChange={(e) => setCategory(e.target.value)}>
+              {categoryOrder.map((value) => (
                 <option key={value} value={value}>
-                  {label}
+                  {categoryLabels[value]}
                 </option>
               ))}
             </select>

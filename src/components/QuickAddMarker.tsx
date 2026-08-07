@@ -1,7 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Category } from '../types'
-import { CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { useIconScale } from '../hooks/useIconScale'
 import { PlacePin } from './PlacePin'
@@ -39,6 +38,8 @@ function StarRating({ rating }: { rating: number }) {
 export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: QuickAddMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
   const [category, setCategory] = useState<Category>(defaultCategory)
+  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
+  const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const categoryStyles = usePlaceStore((s) => s.categoryStyles)
   const { iconScale } = useIconScale()
   const style = categoryStyles[category]
@@ -77,13 +78,13 @@ export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: Qui
             )}
 
             <div className="quick-add-categories">
-              {CATEGORY_ORDER.map((c) => (
+              {categoryOrder.map((c) => (
                 <button
                   key={c}
                   type="button"
                   className={c === category ? 'category-dot active' : 'category-dot'}
                   style={{ '--dot-color': categoryStyles[c].color } as CSSProperties}
-                  title={CATEGORY_LABELS[c]}
+                  title={categoryLabels[c]}
                   onClick={() => setCategory(c)}
                 >
                   <span />

@@ -73,15 +73,25 @@ h3 {
 
 /*
  * Google Maps' InfoWindow reserves top space for a header row even when no
- * headerContent is set, which pushes our custom content down inside the
- * bubble. Override its internal wrapper padding so content starts flush
- * at the top. These classes come from the Maps JS SDK, not our CSS modules.
+ * headerContent is set, and centers short content inside a taller-than-needed
+ * bubble. Override its internal wrapper so content sits flush at the
+ * top-left instead. These classes come from the Maps JS SDK, not our CSS
+ * modules, so selectors are broad and !important is required to win over
+ * Google's inline/high-specificity styles.
  */
-.gm-style .gm-style-iw-d {
-  padding-top: 0 !important;
-  overflow: visible !important;
+.gm-style .gm-style-iw-c {
+  padding: 14px 20px 10px 12px !important;
+  text-align: left !important;
 }
 
-.gm-style .gm-style-iw-c {
-  padding-top: 14px !important;
+.gm-style .gm-style-iw-d {
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  text-align: left !important;
+  display: block !important;
+}
+
+.gm-style .gm-style-iw-d > div {
+  text-align: left !important;
 }

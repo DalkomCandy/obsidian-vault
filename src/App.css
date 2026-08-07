@@ -391,6 +391,7 @@
   max-width: 240px;
   padding: 6px 20px 4px 2px;
   color: #111827;
+  text-align: left;
 }
 
 .popup-title {
@@ -465,6 +466,7 @@
   min-width: 260px;
   max-width: 300px;
   padding: 2px 4px 2px 0;
+  text-align: left;
 }
 
 .quick-add-name {

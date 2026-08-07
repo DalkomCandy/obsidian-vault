@@ -35,7 +35,7 @@ function App() {
         const trip = tripById.get(place.tripId)
         if (selectedRegion && trip?.region !== selectedRegion) return false
         if (selectedTripId && place.tripId !== selectedTripId) return false
-        if (selectedCategories.length > 0 && !selectedCategories.includes(place.category)) return false
+        if (!selectedCategories.includes(place.category)) return false
         return true
       }),
     [places, tripById, selectedRegion, selectedTripId, selectedCategories],
@@ -52,15 +52,7 @@ function App() {
     hintTimer.current = window.setTimeout(() => setHint(null), 2500)
   }
 
-  const handleMapClick = (lat: number, lng: number) => {
-    if (!selectedTripId) {
-      showHint(NEEDS_TRIP_HINT)
-      return
-    }
-    setDraftLocation({ lat, lng, name: '' })
-  }
-
-  const handleSearchSelect = (result: SearchResult) => {
+  const handleLocationPicked = (result: SearchResult) => {
     if (!selectedTripId) {
       showHint(NEEDS_TRIP_HINT)
       return
@@ -132,9 +124,8 @@ function App() {
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}
-            onMapClick={handleMapClick}
+            onLocationPicked={handleLocationPicked}
             onEditPlace={handleEditPlace}
-            onSearchSelect={handleSearchSelect}
             onSaveDraft={handleSaveDraft}
             onCancelDraft={() => setDraftLocation(null)}
           />

@@ -6,7 +6,6 @@ import {
   MARKER_COLOR_PALETTE,
   MARKER_SHAPES,
   MARKER_SHAPE_LABELS,
-  formatTripLabel,
 } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
@@ -54,7 +53,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
         <h3>여행지 수정</h3>
         {trip && (
           <p className="form-trip-label">
-            {trip.region} · {formatTripLabel(trip.date)}
+            {trip.region} · {trip.name}
           </p>
         )}
 

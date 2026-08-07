@@ -15,7 +15,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --bg: #14161c;
     --panel-bg: #1a1d25;
     --text: #e5e7eb;
@@ -28,6 +28,20 @@
     --chip-active-bg: #3b82f6;
     --chip-active-text: #0b0d12;
   }
+}
+
+:root[data-theme='dark'] {
+  --bg: #14161c;
+  --panel-bg: #1a1d25;
+  --text: #e5e7eb;
+  --text-muted: #9ca3af;
+  --border: #2c303b;
+  --accent: #3b82f6;
+  --accent-contrast: #ffffff;
+  --danger: #f87171;
+  --chip-bg: #23262f;
+  --chip-active-bg: #3b82f6;
+  --chip-active-text: #0b0d12;
 }
 
 * {
@@ -55,4 +69,19 @@ h1,
 h2,
 h3 {
   margin: 0;
+}
+
+/*
+ * Google Maps' InfoWindow reserves top space for a header row even when no
+ * headerContent is set, which pushes our custom content down inside the
+ * bubble. Override its internal wrapper padding so content starts flush
+ * at the top. These classes come from the Maps JS SDK, not our CSS modules.
+ */
+.gm-style .gm-style-iw-d {
+  padding-top: 0 !important;
+  overflow: visible !important;
+}
+
+.gm-style .gm-style-iw-c {
+  padding-top: 14px !important;
 }

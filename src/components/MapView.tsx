@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import { Map, type MapMouseEvent } from '@vis.gl/react-google-maps'
+import { Map, useMapsLibrary, type MapMouseEvent } from '@vis.gl/react-google-maps'
 import type { Category, Place } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { GOOGLE_MAPS_MAP_ID, DEFAULT_CENTER, DEFAULT_ZOOM } from '../lib/googleMaps'
@@ -14,9 +14,8 @@ interface MapViewProps {
   focusPlace: Place | null
   fitPlaces: Place[] | null
   draftLocation: DraftLocation | null
-  onMapClick: (lat: number, lng: number) => void
+  onLocationPicked: (result: SearchResult) => void
   onEditPlace: (place: Place) => void
-  onSearchSelect: (result: SearchResult) => void
   onSaveDraft: (name: string, category: Category) => void
   onCancelDraft: () => void
 }
@@ -26,20 +25,38 @@ export function MapView({
   focusPlace,
   fitPlaces,
   draftLocation,
-  onMapClick,
+  onLocationPicked,
   onEditPlace,
-  onSearchSelect,
   onSaveDraft,
   onCancelDraft,
 }: MapViewProps) {
   const fadeVisitedEnabled = usePlaceStore((s) => s.settings.fadeVisitedEnabled)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
+  const placesLib = useMapsLibrary('places')
 
+  // Only clicking an existing Google Maps POI icon opens the quick-add popup;
+  // clicking empty ground does nothing (no placeId on the event).
   const handleClick = useCallback(
-    (e: MapMouseEvent) => {
-      if (e.detail.latLng) onMapClick(e.detail.latLng.lat, e.detail.latLng.lng)
+    async (e: MapMouseEvent) => {
+      const placeId = e.detail.placeId
+      const latLng = e.detail.latLng
+      if (!placeId || !latLng || !placesLib) return
+      e.stop()
+
+      try {
+        const place = new placesLib.Place({ id: placeId })
+        await place.fetchFields({ fields: ['displayName', 'location', 'formattedAddress'] })
+        onLocationPicked({
+          name: place.displayName ?? '',
+          lat: place.location?.lat() ?? latLng.lat,
+          lng: place.location?.lng() ?? latLng.lng,
+          address: place.formattedAddress ?? undefined,
+        })
+      } catch {
+        onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
+      }
     },
-    [onMapClick],
+    [onLocationPicked, placesLib],
   )
 
   const markers = useMemo(
@@ -54,7 +71,7 @@ export function MapView({
 
   return (
     <>
-      <SearchBox onPlaceSelected={onSearchSelect} />
+      <SearchBox onPlaceSelected={onLocationPicked} />
       <Map
         className="map-container"
         mapId={GOOGLE_MAPS_MAP_ID}

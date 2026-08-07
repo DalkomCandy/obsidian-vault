@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import type { Category, Place } from '../types'
-import { CATEGORY_LABELS, CATEGORY_ORDER, formatTripLabel } from '../types'
+import { CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
 import { CategoryFilter } from './CategoryFilter'
+import { ThemeToggle } from './ThemeToggle'
 
 interface SidebarProps {
   places: Place[]
@@ -23,7 +24,10 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const setSelectedTripId = usePlaceStore((s) => s.setSelectedTripId)
   const selectedCategories = usePlaceStore((s) => s.selectedCategories)
   const toggleCategoryFilter = usePlaceStore((s) => s.toggleCategoryFilter)
+  const setAllCategoriesSelected = usePlaceStore((s) => s.setAllCategoriesSelected)
   const addTrip = usePlaceStore((s) => s.addTrip)
+  const renameTrip = usePlaceStore((s) => s.renameTrip)
+  const removeTrip = usePlaceStore((s) => s.removeTrip)
 
   const regions = useMemo(
     () => [...new Set(trips.map((t) => t.region))].sort((a, b) => a.localeCompare(b, 'ko')),
@@ -99,7 +103,10 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <h1>여행 지도</h1>
+        <div className="sidebar-header-top">
+          <h1>여행 지도</h1>
+          <ThemeToggle />
+        </div>
         <p className="subtitle">전체 → 지역 → 여행 순으로 관리해요</p>
       </div>
 
@@ -135,10 +142,16 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
             const trip = addTrip(selectedRegion, date)
             setSelectedTripId(trip.id)
           }}
+          onRenameTrip={renameTrip}
+          onDeleteTrip={removeTrip}
         />
       )}
 
-      <CategoryFilter selected={selectedCategories} onToggle={toggleCategoryFilter} />
+      <CategoryFilter
+        selected={selectedCategories}
+        onToggle={toggleCategoryFilter}
+        onSetAll={setAllCategoriesSelected}
+      />
 
       <div className="place-list">
         {places.length === 0 && (
@@ -167,7 +180,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
             return (
               <div className="region-group" key={tripId}>
                 <button className="region-title" onClick={() => setSelectedTripId(tripId)}>
-                  <span>{trip ? formatTripLabel(trip.date) : '알 수 없음'}</span>
+                  <span>{trip ? trip.name : '알 수 없음'}</span>
                   <span className="region-count">{list.length}개</span>
                 </button>
               </div>

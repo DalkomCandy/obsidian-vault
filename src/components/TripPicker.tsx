@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Trip } from '../types'
-import { formatTripLabel, todayDateString } from '../types'
+import { todayDateString } from '../types'
 
 interface TripPickerProps {
   region: string
@@ -8,15 +8,42 @@ interface TripPickerProps {
   selectedTripId: string | null
   onSelectTrip: (tripId: string | null) => void
   onCreateTrip: (date: string) => void
+  onRenameTrip: (id: string, name: string) => void
+  onDeleteTrip: (id: string) => void
 }
 
-export function TripPicker({ region, trips, selectedTripId, onSelectTrip, onCreateTrip }: TripPickerProps) {
+export function TripPicker({
+  region,
+  trips,
+  selectedTripId,
+  onSelectTrip,
+  onCreateTrip,
+  onRenameTrip,
+  onDeleteTrip,
+}: TripPickerProps) {
   const [creating, setCreating] = useState(false)
   const [date, setDate] = useState(todayDateString())
+  const [renaming, setRenaming] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
 
   const regionTrips = trips
     .filter((t) => t.region === region)
     .sort((a, b) => b.date.localeCompare(a.date))
+
+  const selectedTrip = regionTrips.find((t) => t.id === selectedTripId) ?? null
+
+  const startRename = () => {
+    if (!selectedTrip) return
+    setNameDraft(selectedTrip.name)
+    setRenaming(true)
+  }
+
+  const confirmRename = () => {
+    if (selectedTrip && nameDraft.trim()) {
+      onRenameTrip(selectedTrip.id, nameDraft.trim())
+    }
+    setRenaming(false)
+  }
 
   return (
     <div className="trip-picker">
@@ -27,13 +54,14 @@ export function TripPicker({ region, trips, selectedTripId, onSelectTrip, onCrea
             className={trip.id === selectedTripId ? 'chip active' : 'chip'}
             onClick={() => onSelectTrip(trip.id === selectedTripId ? null : trip.id)}
           >
-            {formatTripLabel(trip.date)}
+            {trip.name}
           </button>
         ))}
         <button type="button" className="chip chip-add" onClick={() => setCreating((v) => !v)}>
           + 새 여행
         </button>
       </div>
+
       {creating && (
         <div className="trip-create-row">
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -46,6 +74,45 @@ export function TripPicker({ region, trips, selectedTripId, onSelectTrip, onCrea
             }}
           >
             추가
+          </button>
+        </div>
+      )}
+
+      {selectedTrip && !renaming && (
+        <div className="trip-manage-row">
+          <button type="button" onClick={startRename}>
+            이름 수정
+          </button>
+          <button
+            type="button"
+            className="danger"
+            onClick={() => {
+              if (confirm(`"${selectedTrip.name}" 여행을 삭제할까요? 이 여행에 저장된 장소도 함께 삭제돼요.`)) {
+                onDeleteTrip(selectedTrip.id)
+              }
+            }}
+          >
+            여행 삭제
+          </button>
+        </div>
+      )}
+
+      {selectedTrip && renaming && (
+        <div className="trip-create-row">
+          <input
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') confirmRename()
+              if (e.key === 'Escape') setRenaming(false)
+            }}
+          />
+          <button type="button" className="primary" onClick={confirmRename}>
+            저장
+          </button>
+          <button type="button" onClick={() => setRenaming(false)}>
+            취소
           </button>
         </div>
       )}

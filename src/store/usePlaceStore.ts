@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { Category, Place, Settings, Trip } from '../types'
+import { CATEGORY_ORDER, formatTripLabel } from '../types'
 
 const TRIPS_KEY = 'travel-map.trips'
 const PLACES_KEY = 'travel-map.places'
@@ -43,7 +44,13 @@ function migrate(rawPlaces: unknown[]): { trips: Trip[]; places: Place[] } {
     const key = `${raw.region}__${date}`
     let trip = tripByRegionDate.get(key)
     if (!trip) {
-      trip = { id: crypto.randomUUID(), region: raw.region, date, createdAt: raw.createdAt }
+      trip = {
+        id: crypto.randomUUID(),
+        region: raw.region,
+        date,
+        name: formatTripLabel(date),
+        createdAt: raw.createdAt,
+      }
       tripByRegionDate.set(key, trip)
       trips.push(trip)
     }
@@ -74,7 +81,10 @@ function loadTripsAndPlaces(): { trips: Trip[]; places: Place[] } {
 
     if (!needsMigration) {
       const rawTrips = localStorage.getItem(TRIPS_KEY)
-      const trips: Trip[] = rawTrips ? JSON.parse(rawTrips) : []
+      const parsedTrips: Array<Partial<Trip> & Pick<Trip, 'id' | 'region' | 'date' | 'createdAt'>> = rawTrips
+        ? JSON.parse(rawTrips)
+        : []
+      const trips: Trip[] = parsedTrips.map((t) => ({ ...t, name: t.name ?? formatTripLabel(t.date) }))
       return { trips, places: parsedPlaces as Place[] }
     }
 
@@ -117,6 +127,8 @@ interface PlaceStore {
   selectedCategories: Category[]
 
   addTrip: (region: string, date: string) => Trip
+  renameTrip: (id: string, name: string) => void
+  removeTrip: (id: string) => void
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
@@ -125,6 +137,7 @@ interface PlaceStore {
   setSelectedRegion: (region: string | null) => void
   setSelectedTripId: (tripId: string | null) => void
   toggleCategoryFilter: (category: Category) => void
+  setAllCategoriesSelected: (selected: boolean) => void
 }
 
 const initial = loadTripsAndPlaces()
@@ -135,16 +148,40 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   settings: loadSettings(),
   selectedRegion: null,
   selectedTripId: null,
-  selectedCategories: [],
+  selectedCategories: [...CATEGORY_ORDER],
 
   addTrip: (region, date) => {
     const existing = get().trips.find((t) => t.region === region && t.date === date)
     if (existing) return existing
-    const trip: Trip = { id: crypto.randomUUID(), region, date, createdAt: new Date().toISOString() }
+    const trip: Trip = {
+      id: crypto.randomUUID(),
+      region,
+      date,
+      name: formatTripLabel(date),
+      createdAt: new Date().toISOString(),
+    }
     const trips = [...get().trips, trip]
     set({ trips })
     persistTrips(trips)
     return trip
+  },
+
+  renameTrip: (id, name) => {
+    const trips = get().trips.map((t) => (t.id === id ? { ...t, name } : t))
+    set({ trips })
+    persistTrips(trips)
+  },
+
+  removeTrip: (id) => {
+    const trips = get().trips.filter((t) => t.id !== id)
+    const places = get().places.filter((p) => p.tripId !== id)
+    set({
+      trips,
+      places,
+      selectedTripId: get().selectedTripId === id ? null : get().selectedTripId,
+    })
+    persistTrips(trips)
+    persistPlaces(places)
   },
 
   addPlace: (place) => {
@@ -199,6 +236,10 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
       ? current.filter((c) => c !== category)
       : [...current, category]
     set({ selectedCategories })
+  },
+
+  setAllCategoriesSelected: (selected) => {
+    set({ selectedCategories: selected ? [...CATEGORY_ORDER] : [] })
   },
 }))
 

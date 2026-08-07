@@ -21,6 +21,13 @@
   padding: 20px 20px 12px;
 }
 
+.sidebar-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 .sidebar-header h1 {
   font-size: 20px;
   font-weight: 700;
@@ -30,6 +37,27 @@
   margin-top: 6px;
   font-size: 12.5px;
   color: var(--text-muted);
+}
+
+.theme-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.theme-toggle-btn {
+  border: none;
+  background: var(--panel-bg);
+  color: var(--text-muted);
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.theme-toggle-btn.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 .settings-panel {
@@ -124,15 +152,57 @@
   white-space: nowrap;
 }
 
+.trip-manage-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.trip-manage-row button {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  padding: 0;
+}
+
+.trip-manage-row button.danger {
+  color: var(--danger);
+}
+
 /* ---------- Category filter ---------- */
 
 .category-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   padding: 0 20px 12px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 4px;
+}
+
+.category-filter-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.category-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.category-filter-all {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 12px;
+  padding: 0;
+}
+
+.category-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .category-chip {

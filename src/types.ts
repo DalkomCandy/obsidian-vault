@@ -13,6 +13,7 @@ export interface Trip {
   id: string
   region: string
   date: string // 'YYYY-MM-DD'
+  name: string
   createdAt: string
 }
 

@@ -42,8 +42,6 @@ export interface Place {
   lng: number
   category: Category
   memo: string
-  iconColor: string | null // null = use the category's default style
-  iconShape: MarkerShape | null // null = use the category's default style
   createdAt: string
 }
 
@@ -148,17 +146,6 @@ export const MARKER_COLOR_PALETTE = [
   '#0891b2',
   '#525252',
 ]
-
-export function resolveIconStyle(
-  place: Pick<Place, 'iconColor' | 'iconShape' | 'category'>,
-  categoryStyles: Record<Category, CategoryStyle>,
-): CategoryStyle {
-  const base = categoryStyles[place.category]
-  return {
-    color: place.iconColor ?? base.color,
-    shape: place.iconShape ?? base.shape,
-  }
-}
 
 export function formatTripLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split('-')

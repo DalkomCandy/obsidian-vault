@@ -5,6 +5,7 @@ interface PlacePinProps {
   color: string
   shape: MarkerShape
   faded: boolean
+  scale?: number
 }
 
 /** Colored circle badge with a white glyph inside — used for semantic (non-geometric) icons. */
@@ -169,9 +170,16 @@ function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
   }
 }
 
-export function PlacePin({ color, shape, faded }: PlacePinProps) {
+export function PlacePin({ color, shape, faded, scale = 1 }: PlacePinProps) {
   return (
-    <div style={{ opacity: faded ? 0.38 : 1, cursor: 'pointer' }}>
+    <div
+      style={{
+        opacity: faded ? 0.38 : 1,
+        cursor: 'pointer',
+        transform: scale !== 1 ? `scale(${scale})` : undefined,
+        transformOrigin: 'bottom center',
+      }}
+    >
       <ShapeSvg color={color} shape={shape} />
     </div>
   )

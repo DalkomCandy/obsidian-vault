@@ -1,7 +1,8 @@
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
-import { CATEGORY_LABELS, resolveIconStyle } from '../types'
+import { CATEGORY_LABELS } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
+import { useIconScale } from '../hooks/useIconScale'
 import { PlacePin } from './PlacePin'
 
 interface PlaceMarkerProps {
@@ -16,8 +17,8 @@ export function PlaceMarker({ place, faded, isOpen, onOpenChange, onEditPlace }:
   const [markerRef, marker] = useAdvancedMarkerRef()
   const removePlace = usePlaceStore((s) => s.removePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
-  const categoryStyles = usePlaceStore((s) => s.categoryStyles)
-  const { color, shape } = resolveIconStyle(place, categoryStyles)
+  const style = usePlaceStore((s) => s.categoryStyles[place.category])
+  const { iconScale } = useIconScale()
 
   return (
     <>
@@ -26,7 +27,7 @@ export function PlaceMarker({ place, faded, isOpen, onOpenChange, onEditPlace }:
         position={{ lat: place.lat, lng: place.lng }}
         onClick={() => onOpenChange(!isOpen)}
       >
-        <PlacePin color={color} shape={shape} faded={faded} />
+        <PlacePin color={style.color} shape={style.shape} faded={faded} scale={iconScale} />
       </AdvancedMarker>
       {isOpen && marker && (
         <InfoWindow anchor={marker} onCloseClick={() => onOpenChange(false)}>

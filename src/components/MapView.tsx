@@ -57,12 +57,17 @@ export function MapView({
 
       try {
         const place = new placesLib.Place({ id: placeId })
-        await place.fetchFields({ fields: ['displayName', 'location', 'formattedAddress'] })
+        await place.fetchFields({
+          fields: ['displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'googleMapsURI'],
+        })
         onLocationPicked({
           name: place.displayName ?? '',
           lat: place.location?.lat() ?? latLng.lat,
           lng: place.location?.lng() ?? latLng.lng,
           address: place.formattedAddress ?? undefined,
+          rating: place.rating ?? undefined,
+          userRatingCount: place.userRatingCount ?? undefined,
+          googleMapsUri: place.googleMapsURI ?? undefined,
         })
       } catch {
         onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })

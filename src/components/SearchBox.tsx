@@ -6,6 +6,9 @@ export interface SearchResult {
   lat: number
   lng: number
   address?: string
+  rating?: number
+  userRatingCount?: number
+  googleMapsUri?: string
 }
 
 interface SearchBoxProps {
@@ -21,7 +24,7 @@ export function SearchBox({ onPlaceSelected }: SearchBoxProps) {
     if (!placesLib || !inputRef.current || !map) return
 
     const autocomplete = new placesLib.Autocomplete(inputRef.current, {
-      fields: ['geometry', 'name', 'formatted_address'],
+      fields: ['geometry', 'name', 'formatted_address', 'rating', 'user_ratings_total', 'url'],
     })
     autocomplete.bindTo('bounds', map)
 
@@ -36,7 +39,10 @@ export function SearchBox({ onPlaceSelected }: SearchBoxProps) {
         name: place.name ?? '',
         lat: location.lat(),
         lng: location.lng(),
-        address: place.formatted_address ?? '',
+        address: place.formatted_address ?? undefined,
+        rating: place.rating ?? undefined,
+        userRatingCount: place.user_ratings_total ?? undefined,
+        googleMapsUri: place.url ?? undefined,
       })
       if (inputRef.current) inputRef.current.value = ''
     })

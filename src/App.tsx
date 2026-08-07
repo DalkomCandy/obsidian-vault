@@ -72,8 +72,6 @@ function App() {
       lng: draftLocation.lng,
       category,
       memo: draftLocation.address ?? '',
-      iconColor: null,
-      iconShape: null,
     })
     setDraftLocation(null)
   }
@@ -91,8 +89,6 @@ function App() {
       name: saved.name,
       category: saved.category,
       memo: saved.memo,
-      iconColor: saved.iconColor,
-      iconShape: saved.iconShape,
     })
     setEditDraft(null)
   }

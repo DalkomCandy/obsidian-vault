@@ -60,8 +60,6 @@ function migrate(rawPlaces: unknown[]): { trips: Trip[]; places: Place[] } {
       lng: raw.lng,
       category: raw.category,
       memo: raw.memo,
-      iconColor: null,
-      iconShape: null,
       createdAt: raw.createdAt,
     })
   }
@@ -130,6 +128,7 @@ interface PlaceStore {
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
+  reorderPlace: (draggedId: string, targetId: string) => void
   setSelectedRegion: (region: string | null) => void
   setSelectedTripId: (tripId: string | null) => void
   toggleCategoryFilter: (category: Category) => void
@@ -202,6 +201,21 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
 
   removePlace: (id) => {
     const places = get().places.filter((p) => p.id !== id)
+    set({ places })
+    persistPlaces(places)
+  },
+
+  reorderPlace: (draggedId, targetId) => {
+    if (draggedId === targetId) return
+    const current = get().places
+    const draggedIndex = current.findIndex((p) => p.id === draggedId)
+    const targetIndex = current.findIndex((p) => p.id === targetId)
+    if (draggedIndex === -1 || targetIndex === -1) return
+
+    const places = [...current]
+    const [dragged] = places.splice(draggedIndex, 1)
+    const newTargetIndex = places.findIndex((p) => p.id === targetId)
+    places.splice(newTargetIndex, 0, dragged)
     set({ places })
     persistPlaces(places)
   },

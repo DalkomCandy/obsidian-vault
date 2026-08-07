@@ -6,6 +6,7 @@ import { TripPicker } from './TripPicker'
 import { CategoryFilter } from './CategoryFilter'
 import { ThemeToggle } from './ThemeToggle'
 import { CategoryStylePicker } from './CategoryStylePicker'
+import { IconSizeControl } from './IconSizeControl'
 
 interface SidebarProps {
   places: Place[]
@@ -15,6 +16,7 @@ interface SidebarProps {
 
 export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const removePlace = usePlaceStore((s) => s.removePlace)
+  const reorderPlace = usePlaceStore((s) => s.reorderPlace)
   const trips = usePlaceStore((s) => s.trips)
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
   const setSelectedRegion = usePlaceStore((s) => s.setSelectedRegion)
@@ -30,6 +32,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const setActiveAddCategory = usePlaceStore((s) => s.setActiveAddCategory)
 
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
+  const [draggedId, setDraggedId] = useState<string | null>(null)
 
   const regions = useMemo(
     () => [...new Set(trips.map((t) => t.region))].sort((a, b) => a.localeCompare(b, 'ko')),
@@ -75,10 +78,27 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   }, [places, tripById])
 
   const renderPlaceRow = (place: Place) => (
-    <li key={place.id} className="place-item">
+    <li
+      key={place.id}
+      className={place.id === draggedId ? 'place-item dragging' : 'place-item'}
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.setData('text/plain', place.id)
+        e.dataTransfer.effectAllowed = 'move'
+        setDraggedId(place.id)
+      }}
+      onDragEnd={() => setDraggedId(null)}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        const draggedFromTransfer = e.dataTransfer.getData('text/plain')
+        if (draggedFromTransfer) reorderPlace(draggedFromTransfer, place.id)
+        setDraggedId(null)
+      }}
+    >
+      <span className="drag-handle">⠿</span>
       <button className="place-main" onClick={() => onFocusPlace(place)}>
         <span className="place-name">{place.name}</span>
-        <span className="place-category">{CATEGORY_LABELS[place.category]}</span>
       </button>
       <div className="place-controls">
         <button title="수정" onClick={() => onEditPlace(place)}>
@@ -104,6 +124,10 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
           <ThemeToggle />
         </div>
         <p className="subtitle">전체 → 지역 → 여행 순으로 관리해요</p>
+      </div>
+
+      <div className="settings-panel">
+        <IconSizeControl />
       </div>
 
       <div className="region-filter">

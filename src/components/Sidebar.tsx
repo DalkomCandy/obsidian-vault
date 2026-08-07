@@ -3,9 +3,8 @@ import type { Category, Place } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
 import { CategoryFilter } from './CategoryFilter'
-import { ThemeToggle } from './ThemeToggle'
+import { SettingsMenu } from './SettingsMenu'
 import { CategoryStylePicker } from './CategoryStylePicker'
-import { IconSizeControl } from './IconSizeControl'
 import { AddCategoryForm } from './AddCategoryForm'
 
 interface SidebarProps {
@@ -16,7 +15,8 @@ interface SidebarProps {
 
 export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const removePlace = usePlaceStore((s) => s.removePlace)
-  const reorderPlace = usePlaceStore((s) => s.reorderPlace)
+  const movePlace = usePlaceStore((s) => s.movePlace)
+  const setPlaceCategory = usePlaceStore((s) => s.setPlaceCategory)
   const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const trips = usePlaceStore((s) => s.trips)
@@ -94,8 +94,9 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
       onDragOver={(e) => e.preventDefault()}
       onDrop={(e) => {
         e.preventDefault()
+        e.stopPropagation()
         const draggedFromTransfer = e.dataTransfer.getData('text/plain')
-        if (draggedFromTransfer) reorderPlace(draggedFromTransfer, place.id)
+        if (draggedFromTransfer) movePlace(draggedFromTransfer, place.id)
         setDraggedId(null)
       }}
     >
@@ -124,13 +125,9 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
       <div className="sidebar-header">
         <div className="sidebar-header-top">
           <h1>여행 지도</h1>
-          <ThemeToggle />
+          <SettingsMenu />
         </div>
         <p className="subtitle">전체 → 지역 → 여행 순으로 관리해요</p>
-      </div>
-
-      <div className="settings-panel">
-        <IconSizeControl />
       </div>
 
       <div className="region-filter">
@@ -190,7 +187,17 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
 
         {selectedTripId &&
           groupedByCategory.map(([category, list]) => (
-            <div className="region-group" key={category}>
+            <div
+              className="region-group"
+              key={category}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault()
+                const draggedFromTransfer = e.dataTransfer.getData('text/plain')
+                if (draggedFromTransfer) setPlaceCategory(draggedFromTransfer, category)
+                setDraggedId(null)
+              }}
+            >
               <div className="region-title static">
                 <button
                   className={activeAddCategory === category ? 'category-name-btn active' : 'category-name-btn'}

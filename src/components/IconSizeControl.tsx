@@ -1,30 +1,27 @@
-import { ICON_SCALE_OPTIONS, useIconScale } from '../hooks/useIconScale'
+import { usePlaceStore } from '../store/usePlaceStore'
 
-const LABELS: Record<number, string> = {
-  0.75: '작게',
-  1: '보통',
-  1.3: '크게',
-  1.6: '아주 크게',
-}
+const MIN_SCALE = 0.6
+const MAX_SCALE = 2
 
 export function IconSizeControl() {
-  const { iconScale, setIconScale } = useIconScale()
+  const iconScale = usePlaceStore((s) => s.iconScale)
+  const setIconScale = usePlaceStore((s) => s.setIconScale)
 
   return (
     <div className="icon-size-control">
-      <span>마커 크기</span>
-      <div className="icon-size-options">
-        {ICON_SCALE_OPTIONS.map((scale) => (
-          <button
-            key={scale}
-            type="button"
-            className={scale === iconScale ? 'icon-size-btn active' : 'icon-size-btn'}
-            onClick={() => setIconScale(scale)}
-          >
-            {LABELS[scale]}
-          </button>
-        ))}
+      <div className="icon-size-header">
+        <span>마커 크기</span>
+        <span className="icon-size-value">{Math.round(iconScale * 100)}%</span>
       </div>
+      <input
+        type="range"
+        min={MIN_SCALE}
+        max={MAX_SCALE}
+        step={0.05}
+        value={iconScale}
+        onChange={(e) => setIconScale(Number(e.target.value))}
+        className="icon-size-slider"
+      />
     </div>
   )
 }

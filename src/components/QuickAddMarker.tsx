@@ -1,8 +1,6 @@
-import { useState, type CSSProperties } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Category } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
-import { useIconScale } from '../hooks/useIconScale'
 import { PlacePin } from './PlacePin'
 
 export interface DraftLocation {
@@ -22,6 +20,8 @@ interface QuickAddMarkerProps {
   onCancel: () => void
 }
 
+const NEUTRAL_COLOR = '#6b7280'
+
 function StarRating({ rating }: { rating: number }) {
   const rounded = Math.round(rating)
   return (
@@ -37,17 +37,13 @@ function StarRating({ rating }: { rating: number }) {
 
 export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: QuickAddMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
-  const [category, setCategory] = useState<Category>(defaultCategory)
-  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
-  const categoryLabels = usePlaceStore((s) => s.categoryLabels)
-  const categoryStyles = usePlaceStore((s) => s.categoryStyles)
-  const { iconScale } = useIconScale()
-  const style = categoryStyles[category]
+  const categoryLabel = usePlaceStore((s) => s.categoryLabels[defaultCategory])
+  const iconScale = usePlaceStore((s) => s.iconScale)
 
   return (
     <>
       <AdvancedMarker ref={markerRef} position={{ lat: draft.lat, lng: draft.lng }}>
-        <PlacePin color={style.color} shape={style.shape} faded={false} scale={iconScale} />
+        <PlacePin color={NEUTRAL_COLOR} shape="pin" faded={false} scale={iconScale} />
       </AdvancedMarker>
       {marker && (
         <InfoWindow anchor={marker} onCloseClick={onCancel}>
@@ -77,22 +73,12 @@ export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: Qui
               </a>
             )}
 
-            <div className="quick-add-categories">
-              {categoryOrder.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={c === category ? 'category-dot active' : 'category-dot'}
-                  style={{ '--dot-color': categoryStyles[c].color } as CSSProperties}
-                  title={categoryLabels[c]}
-                  onClick={() => setCategory(c)}
-                >
-                  <span />
-                </button>
-              ))}
+            <div className="quick-add-category-hint">
+              카테고리: {categoryLabel} · 사이드바에서 미리 선택하면 바뀌어요
             </div>
+
             <div className="quick-add-actions">
-              <button type="button" className="primary" onClick={() => onSave(category)}>
+              <button type="button" className="primary" onClick={() => onSave(defaultCategory)}>
                 저장
               </button>
             </div>

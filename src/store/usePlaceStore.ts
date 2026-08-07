@@ -10,6 +10,8 @@ import {
 const TRIPS_KEY = 'travel-map.trips'
 const PLACES_KEY = 'travel-map.places'
 const CATEGORIES_KEY = 'travel-map.categories'
+const ICON_SCALE_KEY = 'travel-map.iconScale'
+const DEFAULT_ICON_SCALE = 1
 
 interface LegacyPlace {
   id: string
@@ -131,6 +133,11 @@ function persistCategories(state: CategoriesState) {
   localStorage.setItem(CATEGORIES_KEY, JSON.stringify(state))
 }
 
+function loadIconScale(): number {
+  const stored = Number(localStorage.getItem(ICON_SCALE_KEY))
+  return Number.isFinite(stored) && stored > 0 ? stored : DEFAULT_ICON_SCALE
+}
+
 interface PlaceStore {
   trips: Trip[]
   places: Place[]
@@ -141,6 +148,7 @@ interface PlaceStore {
   selectedTripId: string | null
   selectedCategories: Category[]
   activeAddCategory: Category | null
+  iconScale: number
 
   addTrip: (region: string, date: string) => Trip
   renameTrip: (id: string, name: string) => void
@@ -148,7 +156,8 @@ interface PlaceStore {
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
-  reorderPlace: (draggedId: string, targetId: string) => void
+  movePlace: (draggedId: string, targetId: string) => void
+  setPlaceCategory: (id: string, category: Category) => void
   setSelectedRegion: (region: string | null) => void
   setSelectedTripId: (tripId: string | null) => void
   toggleCategoryFilter: (category: Category) => void
@@ -156,6 +165,7 @@ interface PlaceStore {
   setCategoryStyle: (category: Category, style: CategoryStyle) => void
   setActiveAddCategory: (category: Category | null) => void
   addCategory: (label: string, style: CategoryStyle) => Category
+  setIconScale: (scale: number) => void
 }
 
 const initial = loadTripsAndPlaces()
@@ -171,6 +181,7 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   selectedTripId: null,
   selectedCategories: [...initialCategories.order],
   activeAddCategory: null,
+  iconScale: loadIconScale(),
 
   addTrip: (region, date) => {
     const existing = get().trips.find((t) => t.region === region && t.date === date)
@@ -229,17 +240,24 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     persistPlaces(places)
   },
 
-  reorderPlace: (draggedId, targetId) => {
+  movePlace: (draggedId, targetId) => {
     if (draggedId === targetId) return
     const current = get().places
     const draggedIndex = current.findIndex((p) => p.id === draggedId)
-    const targetIndex = current.findIndex((p) => p.id === targetId)
-    if (draggedIndex === -1 || targetIndex === -1) return
+    const target = current.find((p) => p.id === targetId)
+    if (draggedIndex === -1 || !target) return
 
     const places = [...current]
     const [dragged] = places.splice(draggedIndex, 1)
+    if (dragged.category !== target.category) dragged.category = target.category
     const newTargetIndex = places.findIndex((p) => p.id === targetId)
     places.splice(newTargetIndex, 0, dragged)
+    set({ places })
+    persistPlaces(places)
+  },
+
+  setPlaceCategory: (id, category) => {
+    const places = get().places.map((p) => (p.id === id ? { ...p, category } : p))
     set({ places })
     persistPlaces(places)
   },
@@ -282,5 +300,10 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     })
     persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
     return id
+  },
+
+  setIconScale: (scale) => {
+    localStorage.setItem(ICON_SCALE_KEY, String(scale))
+    set({ iconScale: scale })
   },
 }))

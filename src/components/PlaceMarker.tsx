@@ -1,7 +1,6 @@
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
-import { useIconScale } from '../hooks/useIconScale'
 import { PlacePin } from './PlacePin'
 
 interface PlaceMarkerProps {
@@ -28,7 +27,7 @@ export function PlaceMarker({
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const style = usePlaceStore((s) => s.categoryStyles[place.category])
-  const { iconScale } = useIconScale()
+  const iconScale = usePlaceStore((s) => s.iconScale)
 
   return (
     <>

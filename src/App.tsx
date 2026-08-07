@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { MapView } from './components/MapView'
 import { Sidebar } from './components/Sidebar'
@@ -8,6 +8,7 @@ import type { DraftLocation } from './components/QuickAddMarker'
 import type { RouteOption } from './components/RouteModePicker'
 import { usePlaceStore } from './store/usePlaceStore'
 import { GOOGLE_MAPS_API_KEY } from './lib/googleMaps'
+import { loadRemoteState } from './store/sync'
 import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS, type Category, type Place, type TravelMode } from './types'
 import './App.css'
 
@@ -30,6 +31,10 @@ function App() {
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
   const [hint, setHint] = useState<string | null>(null)
   const hintTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => {
+    loadRemoteState()
+  }, [])
 
   const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 
@@ -136,7 +141,7 @@ function App() {
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}
-            defaultAddCategory={activeAddCategory ?? 'sight'}
+            defaultAddCategory={activeAddCategory ?? 'etc'}
             openPlaceId={openPlaceId}
             onOpenPlaceChange={setOpenPlaceId}
             onLocationPicked={handleLocationPicked}

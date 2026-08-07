@@ -250,6 +250,17 @@
   border-color: #fecaca;
 }
 
+.popup-actions button.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.search-pin {
+  cursor: pointer;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}
+
 /* ---------- Place form ---------- */
 
 .form-overlay {

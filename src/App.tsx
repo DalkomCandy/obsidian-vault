@@ -17,6 +17,7 @@ function App() {
 
   const [draft, setDraft] = useState<PlaceDraft | null>(null)
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
+  const [searchResult, setSearchResult] = useState<SearchResult | null>(null)
 
   const visiblePlaces = useMemo(
     () => (selectedRegion ? places.filter((p) => p.region === selectedRegion) : places),
@@ -46,15 +47,21 @@ function App() {
   }
 
   const handleSearchSelect = (result: SearchResult) => {
+    setSearchResult(result)
+  }
+
+  const handleAddSearchResult = () => {
+    if (!searchResult) return
     setDraft({
-      name: result.name,
-      lat: result.lat,
-      lng: result.lng,
+      name: searchResult.name,
+      lat: searchResult.lat,
+      lng: searchResult.lng,
       region: selectedRegion ?? '',
       category: 'sight',
-      memo: result.address,
+      memo: searchResult.address,
       visited: false,
     })
+    setSearchResult(null)
   }
 
   const handleEditPlace = (place: Place) => {
@@ -105,9 +112,12 @@ function App() {
             places={visiblePlaces}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
+            searchResult={searchResult}
             onMapClick={handleMapClick}
             onEditPlace={handleEditPlace}
             onSearchSelect={handleSearchSelect}
+            onAddSearchResult={handleAddSearchResult}
+            onCloseSearchResult={() => setSearchResult(null)}
           />
         </main>
         {draft && (

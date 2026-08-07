@@ -7,23 +7,30 @@ import { MapController } from './MapController'
 import { PlaceMarker } from './PlaceMarker'
 import { SearchBox } from './SearchBox'
 import type { SearchResult } from './SearchBox'
+import { SearchResultMarker } from './SearchResultMarker'
 
 interface MapViewProps {
   places: Place[]
   focusPlace: Place | null
   fitPlaces: Place[] | null
+  searchResult: SearchResult | null
   onMapClick: (lat: number, lng: number) => void
   onEditPlace: (place: Place) => void
   onSearchSelect: (result: SearchResult) => void
+  onAddSearchResult: () => void
+  onCloseSearchResult: () => void
 }
 
 export function MapView({
   places,
   focusPlace,
   fitPlaces,
+  searchResult,
   onMapClick,
   onEditPlace,
   onSearchSelect,
+  onAddSearchResult,
+  onCloseSearchResult,
 }: MapViewProps) {
   const fadeVisitedEnabled = usePlaceStore((s) => s.settings.fadeVisitedEnabled)
 
@@ -60,6 +67,13 @@ export function MapView({
       >
         <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} />
         {markers}
+        {searchResult && (
+          <SearchResultMarker
+            result={searchResult}
+            onAdd={onAddSearchResult}
+            onClose={onCloseSearchResult}
+          />
+        )}
       </Map>
     </>
   )

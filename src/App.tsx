@@ -1,93 +1,111 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { MapView } from './components/MapView'
 import { Sidebar } from './components/Sidebar'
 import { PlaceForm, draftFromPlace, type PlaceDraft } from './components/PlaceForm'
 import type { SearchResult } from './components/SearchBox'
+import type { DraftLocation } from './components/QuickAddMarker'
 import { usePlaceStore } from './store/usePlaceStore'
 import { GOOGLE_MAPS_API_KEY } from './lib/googleMaps'
-import type { Place } from './types'
+import type { Category, Place } from './types'
 import './App.css'
+
+const NEEDS_TRIP_HINT = '먼저 지역과 여행(날짜)을 선택하거나 만들어주세요'
 
 function App() {
   const places = usePlaceStore((s) => s.places)
+  const trips = usePlaceStore((s) => s.trips)
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
+  const selectedTripId = usePlaceStore((s) => s.selectedTripId)
+  const selectedCategories = usePlaceStore((s) => s.selectedCategories)
   const addPlace = usePlaceStore((s) => s.addPlace)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
 
-  const [draft, setDraft] = useState<PlaceDraft | null>(null)
+  const [editDraft, setEditDraft] = useState<PlaceDraft | null>(null)
+  const [draftLocation, setDraftLocation] = useState<DraftLocation | null>(null)
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
-  const [searchResult, setSearchResult] = useState<SearchResult | null>(null)
+  const [hint, setHint] = useState<string | null>(null)
+  const hintTimer = useRef<number | undefined>(undefined)
+
+  const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 
   const visiblePlaces = useMemo(
-    () => (selectedRegion ? places.filter((p) => p.region === selectedRegion) : places),
-    [places, selectedRegion],
+    () =>
+      places.filter((place) => {
+        const trip = tripById.get(place.tripId)
+        if (selectedRegion && trip?.region !== selectedRegion) return false
+        if (selectedTripId && place.tripId !== selectedTripId) return false
+        if (selectedCategories.length > 0 && !selectedCategories.includes(place.category)) return false
+        return true
+      }),
+    [places, tripById, selectedRegion, selectedTripId, selectedCategories],
   )
 
   const fitPlaces = useMemo(
-    () => (selectedRegion ? visiblePlaces : null),
-    [selectedRegion, visiblePlaces],
+    () => ((selectedRegion || selectedTripId) && visiblePlaces.length ? visiblePlaces : null),
+    [selectedRegion, selectedTripId, visiblePlaces],
   )
 
-  const existingRegions = useMemo(
-    () => [...new Set(places.map((p) => p.region))].sort((a, b) => a.localeCompare(b, 'ko')),
-    [places],
-  )
+  const showHint = (message: string) => {
+    setHint(message)
+    window.clearTimeout(hintTimer.current)
+    hintTimer.current = window.setTimeout(() => setHint(null), 2500)
+  }
 
   const handleMapClick = (lat: number, lng: number) => {
-    setDraft({
-      name: '',
-      lat,
-      lng,
-      region: selectedRegion ?? '',
-      category: 'sight',
-      memo: '',
-      visited: false,
-    })
+    if (!selectedTripId) {
+      showHint(NEEDS_TRIP_HINT)
+      return
+    }
+    setDraftLocation({ lat, lng, name: '' })
   }
 
   const handleSearchSelect = (result: SearchResult) => {
-    setSearchResult(result)
+    if (!selectedTripId) {
+      showHint(NEEDS_TRIP_HINT)
+      return
+    }
+    setDraftLocation({ lat: result.lat, lng: result.lng, name: result.name, address: result.address })
   }
 
-  const handleAddSearchResult = () => {
-    if (!searchResult) return
-    setDraft({
-      name: searchResult.name,
-      lat: searchResult.lat,
-      lng: searchResult.lng,
-      region: selectedRegion ?? '',
-      category: 'sight',
-      memo: searchResult.address,
+  const handleSaveDraft = (name: string, category: Category) => {
+    if (!selectedTripId || !draftLocation) return
+    addPlace({
+      tripId: selectedTripId,
+      name,
+      lat: draftLocation.lat,
+      lng: draftLocation.lng,
+      category,
+      memo: draftLocation.address ?? '',
       visited: false,
+      visitDate: null,
+      iconColor: null,
+      iconShape: 'pin',
     })
-    setSearchResult(null)
+    setDraftLocation(null)
   }
 
   const handleEditPlace = (place: Place) => {
-    setDraft(draftFromPlace(place))
+    setEditDraft(draftFromPlace(place))
   }
 
   const handleFocusPlace = (place: Place) => {
     setFocusPlace({ ...place })
   }
 
-  const handleSave = (saved: PlaceDraft) => {
-    if (saved.id) {
-      updatePlace(saved.id, saved)
-    } else {
-      addPlace({
-        name: saved.name,
-        lat: saved.lat,
-        lng: saved.lng,
-        region: saved.region,
-        category: saved.category,
-        memo: saved.memo,
-        visited: saved.visited,
-        visitDate: saved.visited ? new Date().toISOString() : null,
-      })
-    }
-    setDraft(null)
+  const handleSaveEdit = (saved: PlaceDraft) => {
+    const current = places.find((p) => p.id === saved.id)
+    const visitDate = saved.visited ? (current?.visited ? current.visitDate : new Date().toISOString()) : null
+    updatePlace(saved.id, {
+      name: saved.name,
+      category: saved.category,
+      memo: saved.memo,
+      visited: saved.visited,
+      visitDate,
+      iconColor: saved.iconColor,
+      iconShape: saved.iconShape,
+    })
+    setEditDraft(null)
   }
 
   if (!GOOGLE_MAPS_API_KEY) {
@@ -106,27 +124,23 @@ function App() {
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places']}>
       <div className="app-shell">
-        <Sidebar places={places} onEditPlace={handleEditPlace} onFocusPlace={handleFocusPlace} />
+        <Sidebar places={visiblePlaces} onEditPlace={handleEditPlace} onFocusPlace={handleFocusPlace} />
         <main className="map-pane">
+          {hint && <div className="map-hint">{hint}</div>}
           <MapView
             places={visiblePlaces}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
-            searchResult={searchResult}
+            draftLocation={draftLocation}
             onMapClick={handleMapClick}
             onEditPlace={handleEditPlace}
             onSearchSelect={handleSearchSelect}
-            onAddSearchResult={handleAddSearchResult}
-            onCloseSearchResult={() => setSearchResult(null)}
+            onSaveDraft={handleSaveDraft}
+            onCancelDraft={() => setDraftLocation(null)}
           />
         </main>
-        {draft && (
-          <PlaceForm
-            draft={draft}
-            existingRegions={existingRegions}
-            onSave={handleSave}
-            onCancel={() => setDraft(null)}
-          />
+        {editDraft && (
+          <PlaceForm draft={editDraft} onSave={handleSaveEdit} onCancel={() => setEditDraft(null)} />
         )}
       </div>
     </APIProvider>

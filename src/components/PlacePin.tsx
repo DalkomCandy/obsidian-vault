@@ -1,19 +1,67 @@
-import type { Category } from '../types'
-import { CATEGORY_COLORS } from '../types'
+import type { MarkerShape } from '../types'
 
 interface PlacePinProps {
-  category: Category
+  color: string
+  shape: MarkerShape
   faded: boolean
 }
 
-export function PlacePin({ category, faded }: PlacePinProps) {
-  const color = CATEGORY_COLORS[category]
+function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
+  switch (shape) {
+    case 'star':
+      return (
+        <svg width="28" height="28" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M13 0l3.5 9.2L26 10l-7 6.4L21 26l-8-5.3L5 26l2-9.6-7-6.4l9.5-.8z"
+            fill={color}
+            stroke="white"
+            strokeWidth="1"
+            strokeLinejoin="round"
+          />
+        </svg>
+      )
+    case 'heart':
+      return (
+        <svg width="28" height="26" viewBox="0 0 30 27" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M15 27S1 17.8 1 9.3C1 4.2 5.1 1 9.6 1c2.3 0 4.5 1.1 5.4 3 .9-1.9 3.1-3 5.4-3C25 1 29 4.2 29 9.3 29 17.8 15 27 15 27z"
+            fill={color}
+            stroke="white"
+            strokeWidth="1"
+          />
+        </svg>
+      )
+    case 'flag':
+      return (
+        <svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+          <line x1="3" y1="1" x2="3" y2="31" stroke={color} strokeWidth="3" />
+          <path d="M3 3h17l-5.5 6L20 15H3z" fill={color} stroke="white" strokeWidth="1" strokeLinejoin="round" />
+        </svg>
+      )
+    case 'circle':
+      return (
+        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="10" fill={color} stroke="white" strokeWidth="2.5" />
+        </svg>
+      )
+    case 'pin':
+    default:
+      return (
+        <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
+          <path
+            d="M13 0C5.8 0 0 5.8 0 13c0 9.3 13 21 13 21s13-11.7 13-21C26 5.8 20.2 0 13 0z"
+            fill={color}
+          />
+          <circle cx="13" cy="13" r="5.5" fill="white" />
+        </svg>
+      )
+  }
+}
+
+export function PlacePin({ color, shape, faded }: PlacePinProps) {
   return (
     <div style={{ opacity: faded ? 0.38 : 1, cursor: 'pointer' }}>
-      <svg width="26" height="34" viewBox="0 0 26 34" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13 0C5.8 0 0 5.8 0 13c0 9.3 13 21 13 21s13-11.7 13-21C26 5.8 20.2 0 13 0z" fill={color} />
-        <circle cx="13" cy="13" r="5.5" fill="white" />
-      </svg>
+      <ShapeSvg color={color} shape={shape} />
     </div>
   )
 }

@@ -1,68 +1,66 @@
-import { useState } from 'react'
-import type { Category, Place } from '../types'
-import { CATEGORY_LABELS } from '../types'
+import { useState, type CSSProperties } from 'react'
+import type { Category, MarkerShape, Place } from '../types'
+import {
+  CATEGORY_LABELS,
+  CATEGORY_COLORS,
+  MARKER_COLOR_PALETTE,
+  MARKER_SHAPES,
+  MARKER_SHAPE_LABELS,
+  formatTripLabel,
+} from '../types'
+import { usePlaceStore } from '../store/usePlaceStore'
+import { PlacePin } from './PlacePin'
 
 export interface PlaceDraft {
-  id?: string
+  id: string
   name: string
   lat: number
   lng: number
-  region: string
   category: Category
   memo: string
   visited: boolean
+  iconColor: string | null
+  iconShape: MarkerShape
 }
 
 interface PlaceFormProps {
   draft: PlaceDraft
-  existingRegions: string[]
   onSave: (draft: PlaceDraft) => void
   onCancel: () => void
 }
 
-export function PlaceForm({ draft, existingRegions, onSave, onCancel }: PlaceFormProps) {
+export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
   const [name, setName] = useState(draft.name)
-  const [region, setRegion] = useState(draft.region)
   const [category, setCategory] = useState<Category>(draft.category)
   const [memo, setMemo] = useState(draft.memo)
   const [visited, setVisited] = useState(draft.visited)
+  const [iconColor, setIconColor] = useState<string | null>(draft.iconColor)
+  const [iconShape, setIconShape] = useState<MarkerShape>(draft.iconShape)
+
+  const place = usePlaceStore((s) => s.places.find((p) => p.id === draft.id))
+  const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place?.tripId))
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !region.trim()) return
-    onSave({ ...draft, name: name.trim(), region: region.trim(), category, memo: memo.trim(), visited })
+    if (!name.trim()) return
+    onSave({ ...draft, name: name.trim(), category, memo: memo.trim(), visited, iconColor, iconShape })
   }
+
+  const previewColor = iconColor ?? CATEGORY_COLORS[category]
 
   return (
     <div className="form-overlay" onClick={onCancel}>
       <form className="place-form" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
-        <h3>{draft.id ? '여행지 수정' : '여행지 추가'}</h3>
+        <h3>여행지 수정</h3>
+        {trip && (
+          <p className="form-trip-label">
+            {trip.region} · {formatTripLabel(trip.date)}
+          </p>
+        )}
 
         <label>
           이름
-          <input
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="예: 경복궁"
-            required
-          />
-        </label>
-
-        <label>
-          지역
-          <input
-            value={region}
-            onChange={(e) => setRegion(e.target.value)}
-            placeholder="예: 서울"
-            list="region-suggestions"
-            required
-          />
-          <datalist id="region-suggestions">
-            {existingRegions.map((r) => (
-              <option key={r} value={r} />
-            ))}
-          </datalist>
+          <input autoFocus value={name} onChange={(e) => setName(e.target.value)} required />
         </label>
 
         <label>
@@ -75,6 +73,46 @@ export function PlaceForm({ draft, existingRegions, onSave, onCancel }: PlaceFor
             ))}
           </select>
         </label>
+
+        <div className="icon-picker">
+          <div className="icon-preview">
+            <PlacePin color={previewColor} shape={iconShape} faded={false} />
+          </div>
+          <div className="icon-picker-controls">
+            <div className="color-swatches">
+              {MARKER_COLOR_PALETTE.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={color === previewColor ? 'swatch active' : 'swatch'}
+                  style={{ '--swatch-color': color } as CSSProperties}
+                  onClick={() => setIconColor(color)}
+                  title={color}
+                />
+              ))}
+              <button
+                type="button"
+                className={iconColor === null ? 'swatch swatch-reset active' : 'swatch swatch-reset'}
+                onClick={() => setIconColor(null)}
+                title="카테고리 기본색"
+              >
+                ↺
+              </button>
+            </div>
+            <div className="shape-select">
+              {MARKER_SHAPES.map((shape) => (
+                <button
+                  key={shape}
+                  type="button"
+                  className={shape === iconShape ? 'shape-chip active' : 'shape-chip'}
+                  onClick={() => setIconShape(shape)}
+                >
+                  {MARKER_SHAPE_LABELS[shape]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <label>
           메모
@@ -105,9 +143,10 @@ export function draftFromPlace(place: Place): PlaceDraft {
     name: place.name,
     lat: place.lat,
     lng: place.lng,
-    region: place.region,
     category: place.category,
     memo: place.memo,
     visited: place.visited,
+    iconColor: place.iconColor,
+    iconShape: place.iconShape,
   }
 }

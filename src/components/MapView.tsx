@@ -1,38 +1,39 @@
 import { useCallback, useMemo } from 'react'
 import { Map, type MapMouseEvent } from '@vis.gl/react-google-maps'
-import type { Place } from '../types'
+import type { Category, Place } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { GOOGLE_MAPS_MAP_ID, DEFAULT_CENTER, DEFAULT_ZOOM } from '../lib/googleMaps'
 import { MapController } from './MapController'
 import { PlaceMarker } from './PlaceMarker'
 import { SearchBox } from './SearchBox'
 import type { SearchResult } from './SearchBox'
-import { SearchResultMarker } from './SearchResultMarker'
+import { QuickAddMarker, type DraftLocation } from './QuickAddMarker'
 
 interface MapViewProps {
   places: Place[]
   focusPlace: Place | null
   fitPlaces: Place[] | null
-  searchResult: SearchResult | null
+  draftLocation: DraftLocation | null
   onMapClick: (lat: number, lng: number) => void
   onEditPlace: (place: Place) => void
   onSearchSelect: (result: SearchResult) => void
-  onAddSearchResult: () => void
-  onCloseSearchResult: () => void
+  onSaveDraft: (name: string, category: Category) => void
+  onCancelDraft: () => void
 }
 
 export function MapView({
   places,
   focusPlace,
   fitPlaces,
-  searchResult,
+  draftLocation,
   onMapClick,
   onEditPlace,
   onSearchSelect,
-  onAddSearchResult,
-  onCloseSearchResult,
+  onSaveDraft,
+  onCancelDraft,
 }: MapViewProps) {
   const fadeVisitedEnabled = usePlaceStore((s) => s.settings.fadeVisitedEnabled)
+  const selectedTripId = usePlaceStore((s) => s.selectedTripId)
 
   const handleClick = useCallback(
     (e: MapMouseEvent) => {
@@ -43,15 +44,12 @@ export function MapView({
 
   const markers = useMemo(
     () =>
-      places.map((place) => (
-        <PlaceMarker
-          key={place.id}
-          place={place}
-          faded={place.visited && fadeVisitedEnabled}
-          onEditPlace={onEditPlace}
-        />
-      )),
-    [places, fadeVisitedEnabled, onEditPlace],
+      places.map((place) => {
+        const otherTrip = Boolean(selectedTripId) && place.tripId !== selectedTripId
+        const faded = otherTrip || (place.visited && fadeVisitedEnabled)
+        return <PlaceMarker key={place.id} place={place} faded={faded} onEditPlace={onEditPlace} />
+      }),
+    [places, fadeVisitedEnabled, selectedTripId, onEditPlace],
   )
 
   return (
@@ -67,12 +65,8 @@ export function MapView({
       >
         <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} />
         {markers}
-        {searchResult && (
-          <SearchResultMarker
-            result={searchResult}
-            onAdd={onAddSearchResult}
-            onClose={onCloseSearchResult}
-          />
+        {draftLocation && (
+          <QuickAddMarker draft={draftLocation} onSave={onSaveDraft} onCancel={onCancelDraft} />
         )}
       </Map>
     </>

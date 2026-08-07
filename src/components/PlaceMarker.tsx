@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
-import { CATEGORY_LABELS } from '../types'
+import { CATEGORY_LABELS, formatTripLabel, resolveIconColor } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
@@ -16,6 +16,7 @@ export function PlaceMarker({ place, faded, onEditPlace }: PlaceMarkerProps) {
   const [open, setOpen] = useState(false)
   const toggleVisited = usePlaceStore((s) => s.toggleVisited)
   const removePlace = usePlaceStore((s) => s.removePlace)
+  const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
 
   return (
     <>
@@ -24,14 +25,15 @@ export function PlaceMarker({ place, faded, onEditPlace }: PlaceMarkerProps) {
         position={{ lat: place.lat, lng: place.lng }}
         onClick={() => setOpen((v) => !v)}
       >
-        <PlacePin category={place.category} faded={faded} />
+        <PlacePin color={resolveIconColor(place)} shape={place.iconShape} faded={faded} />
       </AdvancedMarker>
       {open && marker && (
         <InfoWindow anchor={marker} onCloseClick={() => setOpen(false)}>
           <div className="popup-content">
             <div className="popup-title">{place.name}</div>
             <div className="popup-meta">
-              {CATEGORY_LABELS[place.category]} · {place.region}
+              {CATEGORY_LABELS[place.category]}
+              {trip && ` · ${trip.region} · ${formatTripLabel(trip.date)}`}
             </div>
             {place.memo && <div className="popup-memo">{place.memo}</div>}
             <div className="popup-actions">

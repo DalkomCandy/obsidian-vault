@@ -14,6 +14,9 @@ interface MapViewProps {
   focusPlace: Place | null
   fitPlaces: Place[] | null
   draftLocation: DraftLocation | null
+  defaultAddCategory: Category
+  openPlaceId: string | null
+  onOpenPlaceChange: (id: string | null) => void
   onLocationPicked: (result: SearchResult) => void
   onEditPlace: (place: Place) => void
   onSaveDraft: (category: Category) => void
@@ -25,28 +28,32 @@ export function MapView({
   focusPlace,
   fitPlaces,
   draftLocation,
+  defaultAddCategory,
+  openPlaceId,
+  onOpenPlaceChange,
   onLocationPicked,
   onEditPlace,
   onSaveDraft,
   onCancelDraft,
 }: MapViewProps) {
-  const fadeVisitedEnabled = usePlaceStore((s) => s.settings.fadeVisitedEnabled)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const placesLib = useMapsLibrary('places')
 
   // Only clicking an existing Google Maps POI icon opens the quick-add popup.
-  // Clicking empty ground closes an open popup (if any); clicking a
-  // different POI replaces it with that POI's info.
+  // Clicking empty ground closes whatever popup is open (draft or a saved
+  // place); clicking a different POI/marker replaces it with that one.
   const handleClick = useCallback(
     async (e: MapMouseEvent) => {
       const placeId = e.detail.placeId
       const latLng = e.detail.latLng
       if (!placeId || !latLng) {
         if (draftLocation) onCancelDraft()
+        if (openPlaceId) onOpenPlaceChange(null)
         return
       }
       if (!placesLib) return
       e.stop()
+      if (openPlaceId) onOpenPlaceChange(null)
 
       try {
         const place = new placesLib.Place({ id: placeId })
@@ -61,17 +68,28 @@ export function MapView({
         onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
       }
     },
-    [onLocationPicked, placesLib, draftLocation, onCancelDraft],
+    [onLocationPicked, placesLib, draftLocation, onCancelDraft, openPlaceId, onOpenPlaceChange],
   )
 
   const markers = useMemo(
     () =>
       places.map((place) => {
-        const otherTrip = Boolean(selectedTripId) && place.tripId !== selectedTripId
-        const faded = otherTrip || (place.visited && fadeVisitedEnabled)
-        return <PlaceMarker key={place.id} place={place} faded={faded} onEditPlace={onEditPlace} />
+        const faded = Boolean(selectedTripId) && place.tripId !== selectedTripId
+        return (
+          <PlaceMarker
+            key={place.id}
+            place={place}
+            faded={faded}
+            isOpen={place.id === openPlaceId}
+            onOpenChange={(open) => {
+              onOpenPlaceChange(open ? place.id : null)
+              if (open && draftLocation) onCancelDraft()
+            }}
+            onEditPlace={onEditPlace}
+          />
+        )
       }),
-    [places, fadeVisitedEnabled, selectedTripId, onEditPlace],
+    [places, selectedTripId, openPlaceId, onOpenPlaceChange, draftLocation, onCancelDraft, onEditPlace],
   )
 
   return (
@@ -88,7 +106,12 @@ export function MapView({
         <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} />
         {markers}
         {draftLocation && (
-          <QuickAddMarker draft={draftLocation} onSave={onSaveDraft} onCancel={onCancelDraft} />
+          <QuickAddMarker
+            draft={draftLocation}
+            defaultCategory={defaultAddCategory}
+            onSave={onSaveDraft}
+            onCancel={onCancelDraft}
+          />
         )}
       </Map>
     </>

@@ -19,6 +19,12 @@ export type MarkerShape =
   | 'triangle'
   | 'bookmark'
   | 'home'
+  | 'bed'
+  | 'cup'
+  | 'fork'
+  | 'bag'
+  | 'camera'
+  | 'car'
 
 export interface Trip {
   id: string
@@ -36,15 +42,14 @@ export interface Place {
   lng: number
   category: Category
   memo: string
-  visited: boolean
-  visitDate: string | null
-  iconColor: string | null // null = use the category's default color
-  iconShape: MarkerShape
+  iconColor: string | null // null = use the category's default style
+  iconShape: MarkerShape | null // null = use the category's default style
   createdAt: string
 }
 
-export interface Settings {
-  fadeVisitedEnabled: boolean
+export interface CategoryStyle {
+  color: string
+  shape: MarkerShape
 }
 
 export const CATEGORY_LABELS: Record<Category, string> = {
@@ -58,17 +63,6 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   etc: '기타',
 }
 
-export const CATEGORY_COLORS: Record<Category, string> = {
-  sight: '#2563eb',
-  food: '#dc2626',
-  cafe: '#a16207',
-  lodging: '#7c3aed',
-  shopping: '#db2777',
-  activity: '#16a34a',
-  transport: '#0891b2',
-  etc: '#525252',
-}
-
 export const CATEGORY_ORDER: Category[] = [
   'sight',
   'food',
@@ -79,6 +73,19 @@ export const CATEGORY_ORDER: Category[] = [
   'transport',
   'etc',
 ]
+
+// Sensible starting point for each category's marker. Fully editable at
+// runtime via the bulk "카테고리 스타일" picker in the sidebar.
+export const DEFAULT_CATEGORY_STYLES: Record<Category, CategoryStyle> = {
+  sight: { color: '#2563eb', shape: 'camera' },
+  food: { color: '#dc2626', shape: 'fork' },
+  cafe: { color: '#a16207', shape: 'cup' },
+  lodging: { color: '#7c3aed', shape: 'bed' },
+  shopping: { color: '#db2777', shape: 'bag' },
+  activity: { color: '#16a34a', shape: 'star' },
+  transport: { color: '#0891b2', shape: 'car' },
+  etc: { color: '#525252', shape: 'pin' },
+}
 
 export const MARKER_SHAPES: MarkerShape[] = [
   'pin',
@@ -91,7 +98,26 @@ export const MARKER_SHAPES: MarkerShape[] = [
   'triangle',
   'bookmark',
   'home',
+  'bed',
+  'cup',
+  'fork',
+  'bag',
+  'camera',
+  'car',
 ]
+
+// Shapes offered in the per-category bulk style picker. "기타" has no fixed
+// icon so it gets the full shape list; the rest get a short relevant subset.
+export const CATEGORY_RELEVANT_SHAPES: Record<Category, MarkerShape[]> = {
+  sight: ['camera', 'flag', 'pin', 'star'],
+  food: ['fork', 'circle', 'pin', 'square'],
+  cafe: ['cup', 'circle', 'pin', 'square'],
+  lodging: ['bed', 'home', 'pin', 'square'],
+  shopping: ['bag', 'pin', 'square', 'diamond'],
+  activity: ['star', 'flag', 'pin', 'circle'],
+  transport: ['car', 'pin', 'circle', 'square'],
+  etc: MARKER_SHAPES,
+}
 
 export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   pin: '핀',
@@ -104,6 +130,12 @@ export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   triangle: '삼각형',
   bookmark: '북마크',
   home: '집',
+  bed: '침대',
+  cup: '컵',
+  fork: '포크',
+  bag: '가방',
+  camera: '카메라',
+  car: '자동차',
 }
 
 export const MARKER_COLOR_PALETTE = [
@@ -117,8 +149,15 @@ export const MARKER_COLOR_PALETTE = [
   '#525252',
 ]
 
-export function resolveIconColor(place: Pick<Place, 'iconColor' | 'category'>): string {
-  return place.iconColor ?? CATEGORY_COLORS[place.category]
+export function resolveIconStyle(
+  place: Pick<Place, 'iconColor' | 'iconShape' | 'category'>,
+  categoryStyles: Record<Category, CategoryStyle>,
+): CategoryStyle {
+  const base = categoryStyles[place.category]
+  return {
+    color: place.iconColor ?? base.color,
+    shape: place.iconShape ?? base.shape,
+  }
 }
 
 export function formatTripLabel(dateStr: string): string {

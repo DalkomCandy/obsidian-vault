@@ -1,12 +1,6 @@
 import { useState, type CSSProperties } from 'react'
 import type { Category, MarkerShape, Place } from '../types'
-import {
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-  MARKER_COLOR_PALETTE,
-  MARKER_SHAPES,
-  MARKER_SHAPE_LABELS,
-} from '../types'
+import { CATEGORY_LABELS, MARKER_COLOR_PALETTE, MARKER_SHAPES, MARKER_SHAPE_LABELS, resolveIconStyle } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
@@ -17,9 +11,8 @@ export interface PlaceDraft {
   lng: number
   category: Category
   memo: string
-  visited: boolean
   iconColor: string | null
-  iconShape: MarkerShape
+  iconShape: MarkerShape | null
 }
 
 interface PlaceFormProps {
@@ -32,20 +25,20 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
   const [name, setName] = useState(draft.name)
   const [category, setCategory] = useState<Category>(draft.category)
   const [memo, setMemo] = useState(draft.memo)
-  const [visited, setVisited] = useState(draft.visited)
   const [iconColor, setIconColor] = useState<string | null>(draft.iconColor)
-  const [iconShape, setIconShape] = useState<MarkerShape>(draft.iconShape)
+  const [iconShape, setIconShape] = useState<MarkerShape | null>(draft.iconShape)
 
   const place = usePlaceStore((s) => s.places.find((p) => p.id === draft.id))
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place?.tripId))
+  const categoryStyles = usePlaceStore((s) => s.categoryStyles)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    onSave({ ...draft, name: name.trim(), category, memo: memo.trim(), visited, iconColor, iconShape })
+    onSave({ ...draft, name: name.trim(), category, memo: memo.trim(), iconColor, iconShape })
   }
 
-  const previewColor = iconColor ?? CATEGORY_COLORS[category]
+  const preview = resolveIconStyle({ iconColor, iconShape, category }, categoryStyles)
 
   return (
     <div className="form-overlay" onClick={onCancel}>
@@ -75,7 +68,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
 
         <div className="icon-picker">
           <div className="icon-preview">
-            <PlacePin color={previewColor} shape={iconShape} faded={false} />
+            <PlacePin color={preview.color} shape={preview.shape} faded={false} />
           </div>
           <div className="icon-picker-controls">
             <div className="color-swatches">
@@ -83,7 +76,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
                 <button
                   key={color}
                   type="button"
-                  className={color === previewColor ? 'swatch active' : 'swatch'}
+                  className={color === preview.color ? 'swatch active' : 'swatch'}
                   style={{ '--swatch-color': color } as CSSProperties}
                   onClick={() => setIconColor(color)}
                   title={color}
@@ -109,6 +102,13 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
                   {MARKER_SHAPE_LABELS[shape]}
                 </button>
               ))}
+              <button
+                type="button"
+                className={iconShape === null ? 'shape-chip active' : 'shape-chip'}
+                onClick={() => setIconShape(null)}
+              >
+                카테고리 기본값
+              </button>
             </div>
           </div>
         </div>
@@ -116,11 +116,6 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
         <label>
           메모
           <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={3} placeholder="메모 (선택)" />
-        </label>
-
-        <label className="checkbox-label">
-          <input type="checkbox" checked={visited} onChange={(e) => setVisited(e.target.checked)} />
-          이미 방문한 곳이에요
         </label>
 
         <div className="form-actions">
@@ -144,7 +139,6 @@ export function draftFromPlace(place: Place): PlaceDraft {
     lng: place.lng,
     category: place.category,
     memo: place.memo,
-    visited: place.visited,
     iconColor: place.iconColor,
     iconShape: place.iconShape,
   }

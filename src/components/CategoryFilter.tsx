@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react'
 import type { Category } from '../types'
-import { CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
+import { CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
+import { usePlaceStore } from '../store/usePlaceStore'
 
 interface CategoryFilterProps {
   selected: Category[]
@@ -9,6 +10,7 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ selected, onToggle, onSetAll }: CategoryFilterProps) {
+  const categoryStyles = usePlaceStore((s) => s.categoryStyles)
   const allSelected = selected.length === CATEGORY_ORDER.length
 
   return (
@@ -27,7 +29,7 @@ export function CategoryFilter({ selected, onToggle, onSetAll }: CategoryFilterP
               key={category}
               type="button"
               className={active ? 'category-chip active' : 'category-chip'}
-              style={{ '--chip-color': CATEGORY_COLORS[category] } as CSSProperties}
+              style={{ '--chip-color': categoryStyles[category].color } as CSSProperties}
               onClick={() => onToggle(category)}
             >
               <span className="dot" />

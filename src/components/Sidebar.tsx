@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { Category, Place } from '../types'
 import { CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
 import { CategoryFilter } from './CategoryFilter'
 import { ThemeToggle } from './ThemeToggle'
+import { CategoryStylePicker } from './CategoryStylePicker'
 
 interface SidebarProps {
   places: Place[]
@@ -13,9 +14,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
-  const settings = usePlaceStore((s) => s.settings)
-  const toggleFade = usePlaceStore((s) => s.toggleFade)
-  const toggleVisited = usePlaceStore((s) => s.toggleVisited)
   const removePlace = usePlaceStore((s) => s.removePlace)
   const trips = usePlaceStore((s) => s.trips)
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
@@ -28,6 +26,10 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   const addTrip = usePlaceStore((s) => s.addTrip)
   const renameTrip = usePlaceStore((s) => s.renameTrip)
   const removeTrip = usePlaceStore((s) => s.removeTrip)
+  const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
+  const setActiveAddCategory = usePlaceStore((s) => s.setActiveAddCategory)
+
+  const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
 
   const regions = useMemo(
     () => [...new Set(trips.map((t) => t.region))].sort((a, b) => a.localeCompare(b, 'ko')),
@@ -73,18 +75,12 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   }, [places, tripById])
 
   const renderPlaceRow = (place: Place) => (
-    <li
-      key={place.id}
-      className={place.visited && settings.fadeVisitedEnabled ? 'place-item faded' : 'place-item'}
-    >
+    <li key={place.id} className="place-item">
       <button className="place-main" onClick={() => onFocusPlace(place)}>
         <span className="place-name">{place.name}</span>
         <span className="place-category">{CATEGORY_LABELS[place.category]}</span>
       </button>
       <div className="place-controls">
-        <button title={place.visited ? '방문 취소' : '방문 완료로 표시'} onClick={() => toggleVisited(place.id)}>
-          {place.visited ? '✓' : '○'}
-        </button>
         <button title="수정" onClick={() => onEditPlace(place)}>
           ✎
         </button>
@@ -108,13 +104,6 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
           <ThemeToggle />
         </div>
         <p className="subtitle">전체 → 지역 → 여행 순으로 관리해요</p>
-      </div>
-
-      <div className="settings-panel">
-        <label className="switch-label">
-          <span>다녀온 장소 흐리게 표시</span>
-          <input type="checkbox" checked={settings.fadeVisitedEnabled} onChange={toggleFade} />
-        </label>
       </div>
 
       <div className="region-filter">
@@ -166,9 +155,25 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
           groupedByCategory.map(([category, list]) => (
             <div className="region-group" key={category}>
               <div className="region-title static">
-                <span>{CATEGORY_LABELS[category]}</span>
-                <span className="region-count">{list.length}개</span>
+                <button
+                  className={activeAddCategory === category ? 'category-name-btn active' : 'category-name-btn'}
+                  title="선택하면 새로 저장하는 장소가 이 카테고리로 들어가요"
+                  onClick={() => setActiveAddCategory(category)}
+                >
+                  {CATEGORY_LABELS[category]}
+                </button>
+                <span className="region-title-right">
+                  <span className="region-count">{list.length}개</span>
+                  <button
+                    className="category-style-btn"
+                    title="이 카테고리의 색/아이콘 일괄 변경"
+                    onClick={() => setStyleEditCategory(styleEditCategory === category ? null : category)}
+                  >
+                    🎨
+                  </button>
+                </span>
               </div>
+              {styleEditCategory === category && <CategoryStylePicker category={category} />}
               <ul>{list.map(renderPlaceRow)}</ul>
             </div>
           ))}

@@ -18,11 +18,13 @@ function App() {
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const selectedCategories = usePlaceStore((s) => s.selectedCategories)
+  const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
   const addPlace = usePlaceStore((s) => s.addPlace)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
 
   const [editDraft, setEditDraft] = useState<PlaceDraft | null>(null)
   const [draftLocation, setDraftLocation] = useState<DraftLocation | null>(null)
+  const [openPlaceId, setOpenPlaceId] = useState<string | null>(null)
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
   const [hint, setHint] = useState<string | null>(null)
   const hintTimer = useRef<number | undefined>(undefined)
@@ -57,6 +59,7 @@ function App() {
       showHint(NEEDS_TRIP_HINT)
       return
     }
+    setOpenPlaceId(null)
     setDraftLocation({ lat: result.lat, lng: result.lng, name: result.name, address: result.address })
   }
 
@@ -69,10 +72,8 @@ function App() {
       lng: draftLocation.lng,
       category,
       memo: draftLocation.address ?? '',
-      visited: false,
-      visitDate: null,
       iconColor: null,
-      iconShape: 'pin',
+      iconShape: null,
     })
     setDraftLocation(null)
   }
@@ -86,14 +87,10 @@ function App() {
   }
 
   const handleSaveEdit = (saved: PlaceDraft) => {
-    const current = places.find((p) => p.id === saved.id)
-    const visitDate = saved.visited ? (current?.visited ? current.visitDate : new Date().toISOString()) : null
     updatePlace(saved.id, {
       name: saved.name,
       category: saved.category,
       memo: saved.memo,
-      visited: saved.visited,
-      visitDate,
       iconColor: saved.iconColor,
       iconShape: saved.iconShape,
     })
@@ -124,6 +121,9 @@ function App() {
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}
+            defaultAddCategory={activeAddCategory ?? 'sight'}
+            openPlaceId={openPlaceId}
+            onOpenPlaceChange={setOpenPlaceId}
             onLocationPicked={handleLocationPicked}
             onEditPlace={handleEditPlace}
             onSaveDraft={handleSaveDraft}

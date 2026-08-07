@@ -1,10 +1,10 @@
 import { create } from 'zustand'
-import type { Category, Place, Settings, Trip } from '../types'
-import { CATEGORY_ORDER, formatTripLabel } from '../types'
+import type { Category, CategoryStyle, Place, Trip } from '../types'
+import { CATEGORY_ORDER, DEFAULT_CATEGORY_STYLES, formatTripLabel } from '../types'
 
 const TRIPS_KEY = 'travel-map.trips'
 const PLACES_KEY = 'travel-map.places'
-const SETTINGS_KEY = 'travel-map.settings'
+const CATEGORY_STYLES_KEY = 'travel-map.categoryStyles'
 
 interface LegacyPlace {
   id: string
@@ -14,8 +14,6 @@ interface LegacyPlace {
   region: string
   category: Category
   memo: string
-  visited: boolean
-  visitDate: string | null
   createdAt: string
 }
 
@@ -62,10 +60,8 @@ function migrate(rawPlaces: unknown[]): { trips: Trip[]; places: Place[] } {
       lng: raw.lng,
       category: raw.category,
       memo: raw.memo,
-      visited: raw.visited,
-      visitDate: raw.visitDate,
       iconColor: null,
-      iconShape: 'pin',
+      iconShape: null,
       createdAt: raw.createdAt,
     })
   }
@@ -97,12 +93,13 @@ function loadTripsAndPlaces(): { trips: Trip[]; places: Place[] } {
   }
 }
 
-function loadSettings(): Settings {
+function loadCategoryStyles(): Record<Category, CategoryStyle> {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
-    return raw ? (JSON.parse(raw) as Settings) : { fadeVisitedEnabled: true }
+    const raw = localStorage.getItem(CATEGORY_STYLES_KEY)
+    const parsed: Partial<Record<Category, CategoryStyle>> = raw ? JSON.parse(raw) : {}
+    return { ...DEFAULT_CATEGORY_STYLES, ...parsed }
   } catch {
-    return { fadeVisitedEnabled: true }
+    return { ...DEFAULT_CATEGORY_STYLES }
   }
 }
 
@@ -114,17 +111,18 @@ function persistPlaces(places: Place[]) {
   localStorage.setItem(PLACES_KEY, JSON.stringify(places))
 }
 
-function persistSettings(settings: Settings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+function persistCategoryStyles(styles: Record<Category, CategoryStyle>) {
+  localStorage.setItem(CATEGORY_STYLES_KEY, JSON.stringify(styles))
 }
 
 interface PlaceStore {
   trips: Trip[]
   places: Place[]
-  settings: Settings
+  categoryStyles: Record<Category, CategoryStyle>
   selectedRegion: string | null
   selectedTripId: string | null
   selectedCategories: Category[]
+  activeAddCategory: Category | null
 
   addTrip: (region: string, date: string) => Trip
   renameTrip: (id: string, name: string) => void
@@ -132,12 +130,12 @@ interface PlaceStore {
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
-  toggleVisited: (id: string) => void
-  toggleFade: () => void
   setSelectedRegion: (region: string | null) => void
   setSelectedTripId: (tripId: string | null) => void
   toggleCategoryFilter: (category: Category) => void
   setAllCategoriesSelected: (selected: boolean) => void
+  setCategoryStyle: (category: Category, style: CategoryStyle) => void
+  setActiveAddCategory: (category: Category | null) => void
 }
 
 const initial = loadTripsAndPlaces()
@@ -145,10 +143,11 @@ const initial = loadTripsAndPlaces()
 export const usePlaceStore = create<PlaceStore>((set, get) => ({
   trips: initial.trips,
   places: initial.places,
-  settings: loadSettings(),
+  categoryStyles: loadCategoryStyles(),
   selectedRegion: null,
   selectedTripId: null,
   selectedCategories: [...CATEGORY_ORDER],
+  activeAddCategory: null,
 
   addTrip: (region, date) => {
     const existing = get().trips.find((t) => t.region === region && t.date === date)
@@ -207,26 +206,6 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     persistPlaces(places)
   },
 
-  toggleVisited: (id) => {
-    const places = get().places.map((p) =>
-      p.id === id
-        ? {
-            ...p,
-            visited: !p.visited,
-            visitDate: !p.visited ? new Date().toISOString() : null,
-          }
-        : p,
-    )
-    set({ places })
-    persistPlaces(places)
-  },
-
-  toggleFade: () => {
-    const settings = { ...get().settings, fadeVisitedEnabled: !get().settings.fadeVisitedEnabled }
-    set({ settings })
-    persistSettings(settings)
-  },
-
   setSelectedRegion: (region) => set({ selectedRegion: region, selectedTripId: null }),
   setSelectedTripId: (tripId) => set({ selectedTripId: tripId }),
 
@@ -241,5 +220,14 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setAllCategoriesSelected: (selected) => {
     set({ selectedCategories: selected ? [...CATEGORY_ORDER] : [] })
   },
-}))
 
+  setCategoryStyle: (category, style) => {
+    const categoryStyles = { ...get().categoryStyles, [category]: style }
+    set({ categoryStyles })
+    persistCategoryStyles(categoryStyles)
+  },
+
+  setActiveAddCategory: (category) => {
+    set({ activeAddCategory: get().activeAddCategory === category ? null : category })
+  },
+}))

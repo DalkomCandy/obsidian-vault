@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { MarkerShape } from '../types'
 
 interface PlacePinProps {
@@ -6,8 +7,66 @@ interface PlacePinProps {
   faded: boolean
 }
 
+/** Colored circle badge with a white glyph inside — used for semantic (non-geometric) icons. */
+function Badge({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="14" cy="14" r="13" fill={color} stroke="white" strokeWidth="2" />
+      <g fill="none" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        {children}
+      </g>
+    </svg>
+  )
+}
+
 function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
   switch (shape) {
+    case 'bed':
+      return (
+        <Badge color={color}>
+          <path d="M6 20v-7a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <path d="M14 15h6a2 2 0 0 1 2 2v3" />
+          <path d="M6 20v2M22 20v2" />
+          <circle cx="9" cy="12.3" r="1.3" fill="white" stroke="none" />
+        </Badge>
+      )
+    case 'cup':
+      return (
+        <Badge color={color}>
+          <path d="M8 9h11l-1 8a3 3 0 0 1-3 3h-3a3 3 0 0 1-3-3z" />
+          <path d="M19 11h1.5a2 2 0 0 1 0 4H19" />
+          <path d="M11 7c0-1 1-1 1-2M14 7c0-1 1-1 1-2" />
+        </Badge>
+      )
+    case 'fork':
+      return (
+        <Badge color={color}>
+          <path d="M10 6v6a2 2 0 0 0 4 0V6M12 6v16M18 6c-1.5 0-2 2-2 4s.5 3 2 3 2-1 2-3-.5-4-2-4zM18 13v9" />
+        </Badge>
+      )
+    case 'bag':
+      return (
+        <Badge color={color}>
+          <path d="M9 10V8a5 5 0 0 1 10 0v2" />
+          <rect x="6" y="10" width="16" height="12" rx="2" />
+        </Badge>
+      )
+    case 'camera':
+      return (
+        <Badge color={color}>
+          <path d="M6 11a2 2 0 0 1 2-2h1.5l1-2h5l1 2H18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z" />
+          <circle cx="14" cy="15" r="3" />
+        </Badge>
+      )
+    case 'car':
+      return (
+        <Badge color={color}>
+          <path d="M6 17v-3l2-5h12l2 5v3" />
+          <path d="M6 17h16M9 17v2M19 17v2" />
+          <circle cx="9.5" cy="17" r="1.3" fill="white" stroke="none" />
+          <circle cx="18.5" cy="17" r="1.3" fill="white" stroke="none" />
+        </Badge>
+      )
     case 'star':
       return (
         <svg width="28" height="28" viewBox="0 0 26 26" xmlns="http://www.w3.org/2000/svg">

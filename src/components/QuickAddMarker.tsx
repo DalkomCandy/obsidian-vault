@@ -1,7 +1,8 @@
 import { useState, type CSSProperties } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Category } from '../types'
-import { CATEGORY_COLORS, CATEGORY_LABELS, CATEGORY_ORDER } from '../types'
+import { CATEGORY_LABELS, CATEGORY_ORDER, resolveIconStyle } from '../types'
+import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
 export interface DraftLocation {
@@ -13,18 +14,21 @@ export interface DraftLocation {
 
 interface QuickAddMarkerProps {
   draft: DraftLocation
+  defaultCategory: Category
   onSave: (category: Category) => void
   onCancel: () => void
 }
 
-export function QuickAddMarker({ draft, onSave, onCancel }: QuickAddMarkerProps) {
+export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: QuickAddMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
-  const [category, setCategory] = useState<Category>('sight')
+  const [category, setCategory] = useState<Category>(defaultCategory)
+  const categoryStyles = usePlaceStore((s) => s.categoryStyles)
+  const { color, shape } = resolveIconStyle({ iconColor: null, iconShape: null, category }, categoryStyles)
 
   return (
     <>
       <AdvancedMarker ref={markerRef} position={{ lat: draft.lat, lng: draft.lng }}>
-        <PlacePin color={CATEGORY_COLORS[category]} shape="pin" faded={false} />
+        <PlacePin color={color} shape={shape} faded={false} />
       </AdvancedMarker>
       {marker && (
         <InfoWindow anchor={marker} onCloseClick={onCancel}>
@@ -36,7 +40,7 @@ export function QuickAddMarker({ draft, onSave, onCancel }: QuickAddMarkerProps)
                   key={c}
                   type="button"
                   className={c === category ? 'category-dot active' : 'category-dot'}
-                  style={{ '--dot-color': CATEGORY_COLORS[c] } as CSSProperties}
+                  style={{ '--dot-color': categoryStyles[c].color } as CSSProperties}
                   title={CATEGORY_LABELS[c]}
                   onClick={() => setCategory(c)}
                 >

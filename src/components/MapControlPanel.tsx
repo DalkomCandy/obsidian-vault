@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { CategoryFilter } from './CategoryFilter'
-import { AddCategoryForm } from './AddCategoryForm'
 
 export function MapControlPanel() {
   const trips = usePlaceStore((s) => s.trips)
@@ -14,7 +13,6 @@ export function MapControlPanel() {
   const [addingRegion, setAddingRegion] = useState(false)
   const [regionDraft, setRegionDraft] = useState('')
   const [categoryOpen, setCategoryOpen] = useState(false)
-  const [addingCategory, setAddingCategory] = useState(false)
   const categoryRef = useRef<HTMLDivElement>(null)
 
   const regions = useMemo(() => {
@@ -99,13 +97,8 @@ export function MapControlPanel() {
             onToggle={toggleCategoryFilter}
             onSetAll={setAllCategoriesSelected}
           />
-          <button type="button" className="add-category-btn" onClick={() => setAddingCategory(true)}>
-            + 카테고리 추가
-          </button>
         </div>
       </div>
-
-      {addingCategory && <AddCategoryForm onDone={() => setAddingCategory(false)} />}
     </div>
   )
 }

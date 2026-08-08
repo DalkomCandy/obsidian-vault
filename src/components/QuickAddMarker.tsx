@@ -37,7 +37,6 @@ function StarRating({ rating }: { rating: number }) {
 
 export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: QuickAddMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
-  const categoryLabel = usePlaceStore((s) => s.categoryLabels[defaultCategory])
   const iconScale = usePlaceStore((s) => s.iconScale)
 
   return (
@@ -72,10 +71,6 @@ export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: Qui
                 Google 지도에서 보기 ↗
               </a>
             )}
-
-            <div className="quick-add-category-hint">
-              카테고리: {categoryLabel} · 사이드바에서 미리 선택하면 바뀌어요
-            </div>
 
             <div className="quick-add-actions">
               <button type="button" className="primary" onClick={() => onSave(defaultCategory)}>

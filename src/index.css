@@ -79,9 +79,16 @@ h3 {
  * modules, so selectors are broad and !important is required to win over
  * Google's inline/high-specificity styles.
  */
+.gm-style .gm-style-iw {
+  height: auto !important;
+}
+
 .gm-style .gm-style-iw-c {
   padding: 14px 20px 10px 12px !important;
   text-align: left !important;
+  display: block !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
 }
 
 .gm-style .gm-style-iw-d {
@@ -90,8 +97,14 @@ h3 {
   overflow: visible !important;
   text-align: left !important;
   display: block !important;
+  align-items: flex-start !important;
 }
 
 .gm-style .gm-style-iw-d > div {
   text-align: left !important;
+}
+
+.gm-style .gm-style-iw-ch {
+  padding: 0 !important;
+  min-height: 0 !important;
 }

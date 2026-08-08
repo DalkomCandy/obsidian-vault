@@ -66,18 +66,30 @@ function App() {
     [places, tripById, selectedRegion, selectedTripId, selectedCategories],
   )
 
-  // Map is a spatial reference view -- shows every trip in the region so
-  // other trips' same-category spots can render faded instead of vanishing
-  // entirely while a specific trip is selected.
+  // Categories present in the currently selected trip -- an other-trip place
+  // only earns a faded reference spot on the map if it shares one of these;
+  // categories the active trip has nothing in stay fully hidden for others.
+  const activeTripCategories = useMemo(
+    () => (selectedTripId ? new Set(sidebarPlaces.map((p) => p.category)) : null),
+    [selectedTripId, sidebarPlaces],
+  )
+
+  // Map is a spatial reference view -- shows the active trip's places plus
+  // other same-region trips' same-category spots (faded), so you can tell
+  // "I already marked a sightseeing spot near here on a different day"
+  // without other trips' unrelated categories cluttering the map.
   const mapPlaces = useMemo(
     () =>
       places.filter((place) => {
         const trip = tripById.get(place.tripId)
         if (selectedRegion && trip?.region !== selectedRegion) return false
         if (!selectedCategories.includes(place.category)) return false
+        if (selectedTripId && place.tripId !== selectedTripId && !activeTripCategories?.has(place.category)) {
+          return false
+        }
         return true
       }),
-    [places, tripById, selectedRegion, selectedCategories],
+    [places, tripById, selectedRegion, selectedCategories, selectedTripId, activeTripCategories],
   )
 
   const fitPlaces = useMemo(

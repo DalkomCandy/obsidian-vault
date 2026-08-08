@@ -88,8 +88,25 @@ function sanitizeCategoryMaps(
   return { categoryOrder: order, categoryLabels: labels, categoryStyles: styles }
 }
 
-/** Fetches the remote state once (call on app start) and applies it locally. */
-export async function loadRemoteState(): Promise<void> {
+let inFlightLoad: Promise<void> | null = null
+
+/**
+ * Fetches the remote state once (call on app start) and applies it locally.
+ * React StrictMode double-invokes mount effects in dev, which would
+ * otherwise run this twice concurrently -- if a local edit lands between
+ * the two runs' merge computations, the second hydrate() would overwrite
+ * the store with a snapshot that predates that edit. Collapsing concurrent
+ * calls into a single in-flight promise removes that race entirely.
+ */
+export function loadRemoteState(): Promise<void> {
+  if (inFlightLoad) return inFlightLoad
+  inFlightLoad = loadRemoteStateOnce().finally(() => {
+    inFlightLoad = null
+  })
+  return inFlightLoad
+}
+
+async function loadRemoteStateOnce(): Promise<void> {
   if (!isSupabaseConfigured || !supabase) return
   try {
     const { data, error } = await supabase

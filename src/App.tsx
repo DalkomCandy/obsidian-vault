@@ -53,7 +53,8 @@ function App() {
 
   const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 
-  const visiblePlaces = useMemo(
+  // Sidebar is a focused management view -- scoped tightly to the active trip.
+  const sidebarPlaces = useMemo(
     () =>
       places.filter((place) => {
         const trip = tripById.get(place.tripId)
@@ -65,9 +66,23 @@ function App() {
     [places, tripById, selectedRegion, selectedTripId, selectedCategories],
   )
 
+  // Map is a spatial reference view -- shows every trip in the region so
+  // other trips' same-category spots can render faded instead of vanishing
+  // entirely while a specific trip is selected.
+  const mapPlaces = useMemo(
+    () =>
+      places.filter((place) => {
+        const trip = tripById.get(place.tripId)
+        if (selectedRegion && trip?.region !== selectedRegion) return false
+        if (!selectedCategories.includes(place.category)) return false
+        return true
+      }),
+    [places, tripById, selectedRegion, selectedCategories],
+  )
+
   const fitPlaces = useMemo(
-    () => ((selectedRegion || selectedTripId) && visiblePlaces.length ? visiblePlaces : null),
-    [selectedRegion, selectedTripId, visiblePlaces],
+    () => ((selectedRegion || selectedTripId) && sidebarPlaces.length ? sidebarPlaces : null),
+    [selectedRegion, selectedTripId, sidebarPlaces],
   )
 
   const showHint = (message: string) => {
@@ -178,7 +193,7 @@ function App() {
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places', 'routes']}>
       <div className="app-shell">
         <Sidebar
-          places={visiblePlaces}
+          places={sidebarPlaces}
           onEditPlace={handleEditPlace}
           onFocusPlace={handleFocusPlace}
           width={sidebarWidth}
@@ -191,7 +206,7 @@ function App() {
         <main className="map-pane">
           {hint && <div className="map-hint">{hint}</div>}
           <MapView
-            places={visiblePlaces}
+            places={mapPlaces}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}

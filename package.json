@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@material-symbols/svg-400": "^0.45.10",
     "@supabase/supabase-js": "^2.112.2",
     "@vis.gl/react-google-maps": "^1.9.0",
     "react": "^19.2.8",

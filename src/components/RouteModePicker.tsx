@@ -18,10 +18,12 @@ interface RouteModePickerProps {
   onCancel: () => void
 }
 
+type RouteFailure = 'unavailable' | 'denied'
+
 export function RouteModePicker({ origin, destination, onSelect, onCancel }: RouteModePickerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
   const routesLib = useMapsLibrary('routes')
-  const [options, setOptions] = useState<Partial<Record<TravelMode, RouteOption | 'unavailable'>>>({})
+  const [options, setOptions] = useState<Partial<Record<TravelMode, RouteOption | RouteFailure>>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -53,12 +55,14 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
           // Surfaced in devtools so a config problem (e.g. Directions API not
           // enabled on the key) is distinguishable from "genuinely no route".
           console.error(`[경로] ${mode} 요청 실패`, err)
-          return [mode, 'unavailable'] as const
+          const message = err instanceof Error ? err.message : String(err)
+          const failure: RouteFailure = message.includes('REQUEST_DENIED') ? 'denied' : 'unavailable'
+          return [mode, failure] as const
         }
       }),
     ).then((results) => {
       if (cancelled) return
-      const next: Partial<Record<TravelMode, RouteOption | 'unavailable'>> = {}
+      const next: Partial<Record<TravelMode, RouteOption | RouteFailure>> = {}
       for (const [mode, value] of results) next[mode] = value
       setOptions(next)
       setLoading(false)
@@ -83,18 +87,19 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
               <div className="route-picker-options">
                 {MODES.map((mode) => {
                   const option = options[mode]
-                  const unavailable = !option || option === 'unavailable'
+                  const failed = !option || option === 'unavailable' || option === 'denied'
+                  const label = !option || option === 'unavailable' ? '정보 없음' : option === 'denied' ? 'API 설정 필요' : option.durationText
                   return (
                     <button
                       key={mode}
                       type="button"
                       className="route-picker-option"
-                      disabled={unavailable}
-                      onClick={() => !unavailable && onSelect(mode, option)}
+                      disabled={failed}
+                      onClick={() => !failed && onSelect(mode, option)}
                     >
                       <span className="route-picker-emoji">{TRAVEL_MODE_EMOJI[mode]}</span>
                       <span className="route-picker-label">{TRAVEL_MODE_LABELS[mode]}</span>
-                      <span className="route-picker-duration">{unavailable ? '정보 없음' : option.durationText}</span>
+                      <span className="route-picker-duration">{label}</span>
                     </button>
                   )
                 })}

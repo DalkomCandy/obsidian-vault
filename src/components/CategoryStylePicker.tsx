@@ -1,13 +1,7 @@
 import { useState, type CSSProperties } from 'react'
 import type { Category } from '../types'
-import {
-  CATEGORY_RELEVANT_SHAPES,
-  MARKER_COLOR_PALETTE,
-  MARKER_SHAPES,
-  MARKER_SHAPE_LABELS,
-  googleIconCandidatesFor,
-  googleIconUrl,
-} from '../types'
+import { MARKER_COLOR_PALETTE, MARKER_SHAPES, MARKER_SHAPE_LABELS } from '../types'
+import { MATERIAL_ICON_GROUPS } from '../lib/materialIcons'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
@@ -16,45 +10,55 @@ interface CategoryStylePickerProps {
   onClose: () => void
 }
 
-function GoogleIconTab({
-  category,
-  iconUrl,
-  onPick,
-}: {
-  category: Category
-  iconUrl: string | undefined
-  onPick: (url: string) => void
-}) {
-  const candidates = googleIconCandidatesFor(category)
-  const [broken, setBroken] = useState<Set<string>>(new Set())
+function GoogleIconTab({ iconUrl, onPick }: { iconUrl: string | undefined; onPick: (url: string) => void }) {
+  const [query, setQuery] = useState('')
+  const [activeGroup, setActiveGroup] = useState(MATERIAL_ICON_GROUPS[0].label)
 
-  const visible = candidates.filter((name) => !broken.has(name))
+  const trimmed = query.trim().toLowerCase()
+  const results = trimmed
+    ? MATERIAL_ICON_GROUPS.flatMap((g) => g.icons).filter(
+        (icon) => icon.label.toLowerCase().includes(trimmed) || icon.name.toLowerCase().includes(trimmed),
+      )
+    : (MATERIAL_ICON_GROUPS.find((g) => g.label === activeGroup)?.icons ?? [])
 
   return (
-    <div className="google-icon-grid">
-      {visible.length === 0 && <p className="google-icon-empty">불러올 수 있는 아이콘이 없어요.</p>}
-      {visible.map((name) => {
-        const url = googleIconUrl(name)
-        return (
+    <div className="google-icon-tab">
+      <input
+        className="google-icon-search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="아이콘 검색 (예: 커피, 호텔)"
+      />
+      {!trimmed && (
+        <div className="google-icon-group-tabs">
+          {MATERIAL_ICON_GROUPS.map((g) => (
+            <button
+              key={g.label}
+              type="button"
+              className={g.label === activeGroup ? 'google-icon-group-tab active' : 'google-icon-group-tab'}
+              onClick={() => setActiveGroup(g.label)}
+            >
+              {g.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="google-icon-grid">
+        {results.length === 0 && <p className="google-icon-empty">검색 결과가 없어요.</p>}
+        {results.map((icon) => (
           <button
-            key={name}
+            key={icon.name}
             type="button"
-            className={url === iconUrl ? 'shape-icon-chip active' : 'shape-icon-chip'}
-            title={name}
-            onClick={() => onPick(url)}
+            className={icon.url === iconUrl ? 'shape-icon-chip active' : 'shape-icon-chip'}
+            title={icon.label}
+            onClick={() => onPick(icon.url)}
           >
             <span className="google-icon-swatch">
-              <img
-                src={url}
-                width={20}
-                height={20}
-                alt=""
-                onError={() => setBroken((prev) => new Set(prev).add(name))}
-              />
+              <img src={icon.url} width={20} height={20} alt={icon.label} />
             </span>
           </button>
-        )
-      })}
+        ))}
+      </div>
     </div>
   )
 }
@@ -68,7 +72,6 @@ export function CategoryStylePicker({ category, onClose }: CategoryStylePickerPr
   const [iconUrl, setIconUrl] = useState(current.iconUrl)
   const [tab, setTab] = useState<'custom' | 'google'>('custom')
 
-  const shapes = CATEGORY_RELEVANT_SHAPES[category] ?? MARKER_SHAPES
   const dirty = shape !== current.shape || color !== current.color || iconUrl !== current.iconUrl
 
   return (
@@ -98,7 +101,7 @@ export function CategoryStylePicker({ category, onClose }: CategoryStylePickerPr
 
         {tab === 'custom' && (
           <div className="shape-select">
-            {shapes.map((s) => (
+            {MARKER_SHAPES.map((s) => (
               <button
                 key={s}
                 type="button"
@@ -115,7 +118,7 @@ export function CategoryStylePicker({ category, onClose }: CategoryStylePickerPr
           </div>
         )}
 
-        {tab === 'google' && <GoogleIconTab category={category} iconUrl={iconUrl} onPick={setIconUrl} />}
+        {tab === 'google' && <GoogleIconTab iconUrl={iconUrl} onPick={setIconUrl} />}
 
         <div className="color-swatches">
           {MARKER_COLOR_PALETTE.map((c) => (

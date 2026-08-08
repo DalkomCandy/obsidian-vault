@@ -5,6 +5,7 @@ import {
   DEFAULT_CATEGORY_ORDER,
   DEFAULT_CATEGORY_STYLES,
   formatTripLabel,
+  todayDateString,
 } from '../types'
 
 const TRIPS_KEY = 'travel-map.trips'
@@ -150,7 +151,7 @@ interface PlaceStore {
   activeAddCategory: Category | null
   iconScale: number
 
-  addTrip: (region: string, date: string) => Trip
+  addTrip: (region: string, name: string) => Trip
   renameTrip: (id: string, name: string) => void
   removeTrip: (id: string) => void
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
@@ -165,6 +166,7 @@ interface PlaceStore {
   setCategoryStyle: (category: Category, style: CategoryStyle) => void
   setActiveAddCategory: (category: Category | null) => void
   addCategory: (label: string, style: CategoryStyle) => Category
+  renameCategory: (category: Category, label: string) => void
   removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
   hydrate: (data: {
@@ -191,14 +193,12 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   activeAddCategory: null,
   iconScale: loadIconScale(),
 
-  addTrip: (region, date) => {
-    const existing = get().trips.find((t) => t.region === region && t.date === date)
-    if (existing) return existing
+  addTrip: (region, name) => {
     const trip: Trip = {
       id: crypto.randomUUID(),
       region,
-      date,
-      name: formatTripLabel(date),
+      date: todayDateString(),
+      name,
       createdAt: new Date().toISOString(),
     }
     const trips = [...get().trips, trip]
@@ -310,12 +310,21 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     return id
   },
 
+  renameCategory: (category, label) => {
+    const categoryLabels = { ...get().categoryLabels, [category]: label }
+    set({ categoryLabels })
+    persistCategories({ order: get().categoryOrder, labels: categoryLabels, styles: get().categoryStyles })
+  },
+
   removeCategory: (category) => {
     const categoryOrder = get().categoryOrder.filter((c) => c !== category)
-    if (categoryOrder.length === 0) return
-    const fallback = categoryOrder.includes('etc') ? 'etc' : categoryOrder[0]
+    const placesInCategory = get().places.filter((p) => p.category === category)
+    // Deleting the last remaining category would strand any places still in
+    // it with no valid category to fall back to.
+    if (categoryOrder.length === 0 && placesInCategory.length > 0) return
+    const fallback = categoryOrder[0]
 
-    const places = get().places.map((p) => (p.category === category ? { ...p, category: fallback } : p))
+    const places = get().places.map((p) => (p.category === category ? { ...p, category: fallback ?? p.category } : p))
     const categoryLabels = { ...get().categoryLabels }
     delete categoryLabels[category]
     const categoryStyles = { ...get().categoryStyles }

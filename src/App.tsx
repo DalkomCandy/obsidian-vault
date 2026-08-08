@@ -13,6 +13,7 @@ import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS, type Category, type Place, type 
 import './App.css'
 
 const NEEDS_TRIP_HINT = '먼저 지역과 여행(날짜)을 선택하거나 만들어주세요'
+const NEEDS_CATEGORY_HINT = '먼저 사이드바에서 카테고리를 만들어주세요'
 
 function App() {
   const places = usePlaceStore((s) => s.places)
@@ -21,6 +22,7 @@ function App() {
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const selectedCategories = usePlaceStore((s) => s.selectedCategories)
   const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
+  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const addPlace = usePlaceStore((s) => s.addPlace)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
 
@@ -64,6 +66,10 @@ function App() {
   const handleLocationPicked = (result: SearchResult) => {
     if (!selectedTripId) {
       showHint(NEEDS_TRIP_HINT)
+      return
+    }
+    if (categoryOrder.length === 0) {
+      showHint(NEEDS_CATEGORY_HINT)
       return
     }
     setOpenPlaceId(null)
@@ -141,7 +147,7 @@ function App() {
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}
-            defaultAddCategory={activeAddCategory ?? 'etc'}
+            defaultAddCategory={activeAddCategory ?? categoryOrder[0]}
             openPlaceId={openPlaceId}
             onOpenPlaceChange={setOpenPlaceId}
             onLocationPicked={handleLocationPicked}

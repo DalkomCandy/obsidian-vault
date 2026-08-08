@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import type { Trip } from '../types'
-import { todayDateString } from '../types'
+import { formatTripLabel, todayDateString } from '../types'
 
 interface TripPickerProps {
   region: string
   trips: Trip[]
   selectedTripId: string | null
   onSelectTrip: (tripId: string | null) => void
-  onCreateTrip: (date: string) => void
+  onCreateTrip: (name: string) => void
   onRenameTrip: (id: string, name: string) => void
   onDeleteTrip: (id: string) => void
 }
@@ -22,7 +22,7 @@ export function TripPicker({
   onDeleteTrip,
 }: TripPickerProps) {
   const [creating, setCreating] = useState(false)
-  const [date, setDate] = useState(todayDateString())
+  const [newName, setNewName] = useState(formatTripLabel(todayDateString()))
   const [renaming, setRenaming] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
 
@@ -64,12 +64,25 @@ export function TripPicker({
 
       {creating && (
         <div className="trip-create-row">
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="여행 이름 (예: 오사카 벚꽃놀이)"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newName.trim()) {
+                onCreateTrip(newName.trim())
+                setCreating(false)
+              }
+              if (e.key === 'Escape') setCreating(false)
+            }}
+          />
           <button
             type="button"
             className="primary"
+            disabled={!newName.trim()}
             onClick={() => {
-              onCreateTrip(date)
+              onCreateTrip(newName.trim())
               setCreating(false)
             }}
           >

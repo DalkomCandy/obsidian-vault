@@ -7,7 +7,6 @@ import { MapController } from './MapController'
 import { PlaceMarker } from './PlaceMarker'
 import { SearchBox } from './SearchBox'
 import type { SearchResult } from './SearchBox'
-import { MapControlPanel } from './MapControlPanel'
 import { QuickAddMarker, type DraftLocation } from './QuickAddMarker'
 import { RouteModePicker, type RouteOption } from './RouteModePicker'
 import { RouteLine, type ActiveRoute } from './RouteLine'
@@ -148,7 +147,6 @@ export function MapView({
   return (
     <>
       <SearchBox onPlaceSelected={onLocationPicked} />
-      <MapControlPanel />
       <Map
         className="map-container"
         mapId={GOOGLE_MAPS_MAP_ID}

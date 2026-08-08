@@ -1,5 +1,5 @@
-// A category id. The 8 built-ins below are just the seed data --
-// users can add their own via the sidebar, so this isn't a fixed union.
+// A category id. There are no built-in categories -- users create their own
+// from scratch via the sidebar, so this isn't a fixed union.
 export type Category = string
 
 export type MarkerShape =
@@ -48,40 +48,15 @@ export interface CategoryStyle {
   iconUrl?: string
 }
 
-export const DEFAULT_CATEGORY_ORDER: Category[] = [
-  'sight',
-  'food',
-  'cafe',
-  'lodging',
-  'shopping',
-  'activity',
-  'transport',
-  'etc',
-]
+// No built-in categories -- everyone starts from zero and adds their own via
+// the sidebar's "카테고리 추가" button.
+export const DEFAULT_CATEGORY_ORDER: Category[] = []
+export const DEFAULT_CATEGORY_LABELS: Record<Category, string> = {}
+export const DEFAULT_CATEGORY_STYLES: Record<Category, CategoryStyle> = {}
 
-export const DEFAULT_CATEGORY_LABELS: Record<Category, string> = {
-  sight: '관광지',
-  food: '음식점',
-  cafe: '카페',
-  lodging: '숙소',
-  shopping: '쇼핑',
-  activity: '액티비티',
-  transport: '교통',
-  etc: '기타',
-}
-
-// Sensible starting point for each category's marker. Fully editable at
-// runtime via the bulk "카테고리 스타일" picker in the sidebar.
-export const DEFAULT_CATEGORY_STYLES: Record<Category, CategoryStyle> = {
-  sight: { color: '#2563eb', shape: 'camera' },
-  food: { color: '#dc2626', shape: 'fork' },
-  cafe: { color: '#a16207', shape: 'cup' },
-  lodging: { color: '#7c3aed', shape: 'bed' },
-  shopping: { color: '#db2777', shape: 'bag' },
-  activity: { color: '#16a34a', shape: 'star' },
-  transport: { color: '#0891b2', shape: 'car' },
-  etc: { color: '#525252', shape: 'pin' },
-}
+// Style a freshly-created category starts with, before the user customizes
+// it via the 🎨 picker or renames it away from "빈 카테고리".
+export const NEW_CATEGORY_STYLE: CategoryStyle = { color: '#2563eb', shape: 'circle' }
 
 export const MARKER_SHAPES: MarkerShape[] = [
   'pin',
@@ -102,19 +77,6 @@ export const MARKER_SHAPES: MarkerShape[] = [
   'car',
 ]
 
-// Shapes offered in the per-category bulk style picker. "기타" has no fixed
-// icon so it gets the full shape list; the rest get a short relevant subset.
-export const CATEGORY_RELEVANT_SHAPES: Record<Category, MarkerShape[]> = {
-  sight: ['camera', 'flag', 'pin', 'star'],
-  food: ['fork', 'circle', 'pin', 'square'],
-  cafe: ['cup', 'circle', 'pin', 'square'],
-  lodging: ['bed', 'home', 'pin', 'square'],
-  shopping: ['bag', 'pin', 'square', 'diamond'],
-  activity: ['star', 'flag', 'pin', 'circle'],
-  transport: ['car', 'pin', 'circle', 'square'],
-  etc: MARKER_SHAPES,
-}
-
 export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   pin: '핀',
   star: '별',
@@ -132,32 +94,6 @@ export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
   bag: '가방',
   camera: '카메라',
   car: '자동차',
-}
-
-// Google's official Place API icon assets (the small pin-shaped glyphs shown
-// on Google Maps itself). Not all names are guaranteed to exist for every
-// account/region, so the picker tries a few candidates per category and
-// silently drops any that fail to load.
-export const GOOGLE_ICON_BASE_URL = 'https://maps.gstatic.com/mapfiles/place_api/icons/v2'
-
-export const CATEGORY_GOOGLE_ICON_CANDIDATES: Record<Category, string[]> = {
-  sight: ['museum', 'civic_building', 'generic_recreational', 'worship_general'],
-  food: ['restaurant'],
-  cafe: ['cafe'],
-  lodging: ['lodging'],
-  shopping: ['shopping'],
-  activity: ['generic_recreational', 'bar'],
-  transport: ['bus', 'gas_station'],
-  etc: [],
-}
-
-export function googleIconCandidatesFor(category: Category): string[] {
-  const specific = CATEGORY_GOOGLE_ICON_CANDIDATES[category] ?? []
-  return [...new Set([...specific, 'generic'])]
-}
-
-export function googleIconUrl(name: string): string {
-  return `${GOOGLE_ICON_BASE_URL}/${name}_pinlet.svg`
 }
 
 export const MARKER_COLOR_PALETTE = [

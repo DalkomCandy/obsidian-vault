@@ -4,7 +4,6 @@ import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
 import { SettingsMenu } from './SettingsMenu'
 import { CategoryStylePicker } from './CategoryStylePicker'
-import { AddCategoryForm } from './AddCategoryForm'
 
 interface SidebarProps {
   places: Place[]
@@ -32,7 +31,6 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
 
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [draggedId, setDraggedId] = useState<string | null>(null)
-  const [addingCategory, setAddingCategory] = useState(false)
 
   const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 
@@ -132,16 +130,6 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
           onDeleteTrip={removeTrip}
         />
       )}
-
-      <div className="add-category-row">
-        {addingCategory ? (
-          <AddCategoryForm onDone={() => setAddingCategory(false)} />
-        ) : (
-          <button type="button" className="add-category-btn" onClick={() => setAddingCategory(true)}>
-            + 카테고리 추가
-          </button>
-        )}
-      </div>
 
       <div className="place-list">
         {places.length === 0 && (

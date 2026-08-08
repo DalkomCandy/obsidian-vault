@@ -157,6 +157,9 @@ export function MapView({
         gestureHandling="greedy"
         streetViewControl={false}
         rotateControl={false}
+        mapTypeControl={false}
+        fullscreenControl={false}
+        zoomControl={false}
         onClick={handleClick}
       >
         <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} />

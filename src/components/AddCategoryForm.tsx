@@ -21,54 +21,56 @@ export function AddCategoryForm({ onDone }: AddCategoryFormProps) {
   }
 
   return (
-    <form className="category-style-picker" onSubmit={handleSubmit}>
-      <div className="category-style-row">
-        <div className="category-style-preview">
-          <PlacePin color={color} shape={shape} faded={false} />
-        </div>
-        <input
-          className="add-category-name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="카테고리 이름"
-          autoFocus
-        />
-      </div>
-      <div className="shape-select">
-        {MARKER_SHAPES.map((s) => (
-          <button
-            key={s}
-            type="button"
-            className={s === shape ? 'shape-icon-chip active' : 'shape-icon-chip'}
-            onClick={() => setShape(s)}
-          >
-            <PlacePin color={color} shape={s} faded={false} />
-          </button>
-        ))}
-      </div>
-      <div className="color-swatches">
-        {MARKER_COLOR_PALETTE.map((c) => (
-          <button
-            key={c}
-            type="button"
-            className={c === color ? 'swatch active' : 'swatch'}
-            style={{ '--swatch-color': c } as CSSProperties}
-            onClick={() => setColor(c)}
-            title={c}
+    <div className="style-popup-overlay" onClick={onDone}>
+      <form className="category-style-picker" onClick={(e) => e.stopPropagation()} onSubmit={handleSubmit}>
+        <div className="category-style-row">
+          <div className="category-style-preview">
+            <PlacePin color={color} shape={shape} faded={false} />
+          </div>
+          <input
+            className="add-category-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="카테고리 이름"
+            autoFocus
           />
-        ))}
-        <label className="swatch-custom" style={{ '--swatch-color': color } as CSSProperties} title="직접 선택">
-          <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
-        </label>
-      </div>
-      <div className="category-style-row category-style-row-end">
-        <button type="button" onClick={onDone}>
-          취소
-        </button>
-        <button type="submit" className="category-style-apply" disabled={!name.trim()}>
-          추가
-        </button>
-      </div>
-    </form>
+        </div>
+        <div className="shape-select">
+          {MARKER_SHAPES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={s === shape ? 'shape-icon-chip active' : 'shape-icon-chip'}
+              onClick={() => setShape(s)}
+            >
+              <PlacePin color={color} shape={s} faded={false} />
+            </button>
+          ))}
+        </div>
+        <div className="color-swatches">
+          {MARKER_COLOR_PALETTE.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={c === color ? 'swatch active' : 'swatch'}
+              style={{ '--swatch-color': c } as CSSProperties}
+              onClick={() => setColor(c)}
+              title={c}
+            />
+          ))}
+          <label className="swatch-custom" style={{ '--swatch-color': color } as CSSProperties} title="직접 선택">
+            <input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
+          </label>
+        </div>
+        <div className="category-style-row category-style-row-end">
+          <button type="button" onClick={onDone}>
+            취소
+          </button>
+          <button type="submit" className="category-style-apply" disabled={!name.trim()}>
+            추가
+          </button>
+        </div>
+      </form>
+    </div>
   )
 }

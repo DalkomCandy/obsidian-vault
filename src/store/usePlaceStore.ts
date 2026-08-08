@@ -167,6 +167,13 @@ interface PlaceStore {
   addCategory: (label: string, style: CategoryStyle) => Category
   removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
+  hydrate: (data: {
+    trips: Trip[]
+    places: Place[]
+    categoryOrder: Category[]
+    categoryLabels: Record<Category, string>
+    categoryStyles: Record<Category, CategoryStyle>
+  }) => void
 }
 
 const initial = loadTripsAndPlaces()
@@ -324,5 +331,16 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setIconScale: (scale) => {
     localStorage.setItem(ICON_SCALE_KEY, String(scale))
     set({ iconScale: scale })
+  },
+
+  // Applies externally-sourced data (e.g. a Supabase merge) AND persists it,
+  // unlike a raw setState which would only update memory -- leaving
+  // localStorage holding the pre-merge data until some unrelated action
+  // happened to persist over it.
+  hydrate: ({ trips, places, categoryOrder, categoryLabels, categoryStyles }) => {
+    set({ trips, places, categoryOrder, categoryLabels, categoryStyles })
+    persistTrips(trips)
+    persistPlaces(places)
+    persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
   },
 }))

@@ -11,6 +11,7 @@ interface SidebarProps {
   places: Place[]
   onEditPlace: (place: Place) => void
   onFocusPlace: (place: Place) => void
+  width: number
 }
 
 function nextEmptyCategoryName(existingLabels: string[]): string {
@@ -21,7 +22,7 @@ function nextEmptyCategoryName(existingLabels: string[]): string {
   return `${base} ${n}`
 }
 
-export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
+export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarProps) {
   const removePlace = usePlaceStore((s) => s.removePlace)
   const movePlace = usePlaceStore((s) => s.movePlace)
   const setPlaceCategory = usePlaceStore((s) => s.setPlaceCategory)
@@ -162,7 +163,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace }: SidebarProps) {
   )
 
   return (
-    <aside className="sidebar">
+    <aside className="sidebar" style={{ width, minWidth: width }}>
       <div className="sidebar-header-top">
         <div className="region-row">
           <select

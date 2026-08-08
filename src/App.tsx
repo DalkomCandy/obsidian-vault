@@ -15,6 +15,17 @@ import './App.css'
 const NEEDS_TRIP_HINT = '먼저 지역과 여행(날짜)을 선택하거나 만들어주세요'
 const NEEDS_CATEGORY_HINT = '먼저 사이드바에서 카테고리를 만들어주세요'
 
+const SIDEBAR_WIDTH_KEY = 'travel-map.sidebarWidth'
+const MIN_SIDEBAR_WIDTH = 240
+const MAX_SIDEBAR_WIDTH = 520
+const DEFAULT_SIDEBAR_WIDTH = 320
+
+function loadSidebarWidth(): number {
+  const stored = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY))
+  if (Number.isFinite(stored) && stored >= MIN_SIDEBAR_WIDTH && stored <= MAX_SIDEBAR_WIDTH) return stored
+  return DEFAULT_SIDEBAR_WIDTH
+}
+
 function App() {
   const places = usePlaceStore((s) => s.places)
   const trips = usePlaceStore((s) => s.trips)
@@ -33,6 +44,8 @@ function App() {
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
   const [hint, setHint] = useState<string | null>(null)
   const hintTimer = useRef<number | undefined>(undefined)
+  const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth)
+  const sidebarWidthRef = useRef(sidebarWidth)
 
   useEffect(() => {
     loadRemoteState()
@@ -61,6 +74,31 @@ function App() {
     setHint(message)
     window.clearTimeout(hintTimer.current)
     hintTimer.current = window.setTimeout(() => setHint(null), 2500)
+  }
+
+  const applySidebarWidth = (clientX: number) => {
+    const next = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, clientX))
+    sidebarWidthRef.current = next
+    setSidebarWidth(next)
+  }
+
+  const handleResizeStart = () => {
+    const onMouseMove = (e: MouseEvent) => applySidebarWidth(e.clientX)
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0]
+      if (touch) applySidebarWidth(touch.clientX)
+    }
+    const stop = () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', stop)
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', stop)
+      localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidthRef.current))
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', stop)
+    document.addEventListener('touchmove', onTouchMove)
+    document.addEventListener('touchend', stop)
   }
 
   const handleLocationPicked = (result: SearchResult) => {
@@ -139,7 +177,17 @@ function App() {
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places', 'routes']}>
       <div className="app-shell">
-        <Sidebar places={visiblePlaces} onEditPlace={handleEditPlace} onFocusPlace={handleFocusPlace} />
+        <Sidebar
+          places={visiblePlaces}
+          onEditPlace={handleEditPlace}
+          onFocusPlace={handleFocusPlace}
+          width={sidebarWidth}
+        />
+        <div
+          className="sidebar-resize-handle"
+          onMouseDown={handleResizeStart}
+          onTouchStart={handleResizeStart}
+        />
         <main className="map-pane">
           {hint && <div className="map-hint">{hint}</div>}
           <MapView

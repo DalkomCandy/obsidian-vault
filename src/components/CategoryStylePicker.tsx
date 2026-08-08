@@ -10,7 +10,15 @@ interface CategoryStylePickerProps {
   onClose: () => void
 }
 
-function GoogleIconTab({ iconUrl, onPick }: { iconUrl: string | undefined; onPick: (url: string) => void }) {
+function GoogleIconTab({
+  iconUrl,
+  color,
+  onPick,
+}: {
+  iconUrl: string | undefined
+  color: string
+  onPick: (url: string) => void
+}) {
   const [query, setQuery] = useState('')
   const [activeGroup, setActiveGroup] = useState(MATERIAL_ICON_GROUPS[0].label)
 
@@ -53,9 +61,7 @@ function GoogleIconTab({ iconUrl, onPick }: { iconUrl: string | undefined; onPic
             title={icon.label}
             onClick={() => onPick(icon.url)}
           >
-            <span className="google-icon-swatch">
-              <img src={icon.url} width={20} height={20} alt={icon.label} />
-            </span>
+            <PlacePin color={color} shape="circle" iconUrl={icon.url} faded={false} />
           </button>
         ))}
       </div>
@@ -118,7 +124,7 @@ export function CategoryStylePicker({ category, onClose }: CategoryStylePickerPr
           </div>
         )}
 
-        {tab === 'google' && <GoogleIconTab iconUrl={iconUrl} onPick={setIconUrl} />}
+        {tab === 'google' && <GoogleIconTab iconUrl={iconUrl} color={color} onPick={setIconUrl} />}
 
         <div className="color-swatches">
           {MARKER_COLOR_PALETTE.map((c) => (

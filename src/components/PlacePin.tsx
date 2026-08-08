@@ -9,8 +9,14 @@ interface PlacePinProps {
   iconUrl?: string
 }
 
-/** White circular badge holding a Google-provided icon image; falls back to the vector shape if the image fails to load. */
-function GoogleIconBadge({ iconUrl, onError }: { iconUrl: string; onError: () => void }) {
+/**
+ * White circular badge holding a Google-provided icon, tinted with the
+ * category color via a CSS mask (the icon itself is just a black glyph, so
+ * rendering it as a plain <img> would ignore whatever color the user picks).
+ * A visually-hidden <img> of the same source still drives the fallback to
+ * the vector shape if the icon somehow fails to load.
+ */
+function GoogleIconBadge({ iconUrl, color, onError }: { iconUrl: string; color: string; onError: () => void }) {
   return (
     <div
       style={{
@@ -23,9 +29,33 @@ function GoogleIconBadge({ iconUrl, onError }: { iconUrl: string; onError: () =>
         alignItems: 'center',
         justifyContent: 'center',
         boxSizing: 'border-box',
+        position: 'relative',
       }}
     >
-      <img src={iconUrl} width={18} height={18} alt="" onError={onError} />
+      <div
+        style={{
+          width: 18,
+          height: 18,
+          backgroundColor: color,
+          // The data-URI SVGs contain unescaped single quotes (from their own
+          // xmlns='...' attributes), which an unquoted url() token rejects
+          // outright -- wrapping it in double quotes keeps it valid.
+          WebkitMaskImage: `url("${iconUrl}")`,
+          maskImage: `url("${iconUrl}")`,
+          WebkitMaskSize: 'contain',
+          maskSize: 'contain',
+          WebkitMaskRepeat: 'no-repeat',
+          maskRepeat: 'no-repeat',
+          WebkitMaskPosition: 'center',
+          maskPosition: 'center',
+        }}
+      />
+      <img
+        src={iconUrl}
+        alt=""
+        onError={onError}
+        style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }}
+      />
     </div>
   )
 }
@@ -206,7 +236,7 @@ export function PlacePin({ color, shape, faded, scale = 1, iconUrl }: PlacePinPr
       }}
     >
       {showGoogleIcon ? (
-        <GoogleIconBadge iconUrl={iconUrl!} onError={() => setIconFailed(true)} />
+        <GoogleIconBadge iconUrl={iconUrl!} color={color} onError={() => setIconFailed(true)} />
       ) : (
         <ShapeSvg color={color} shape={shape} />
       )}

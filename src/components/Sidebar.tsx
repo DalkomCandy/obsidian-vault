@@ -51,6 +51,16 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [addingRegion, setAddingRegion] = useState(false)
   const [regionDraft, setRegionDraft] = useState('')
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<Category>>(new Set())
+
+  const toggleCollapsed = (category: Category) => {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev)
+      if (next.has(category)) next.delete(category)
+      else next.add(category)
+      return next
+    })
+  }
 
   const regions = useMemo(() => {
     const all = trips.map((t) => t.region)
@@ -262,6 +272,15 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
               }}
             >
               <div className="region-title static">
+                <button
+                  type="button"
+                  className={collapsedCategories.has(category) ? 'category-collapse-btn collapsed' : 'category-collapse-btn'}
+                  title={collapsedCategories.has(category) ? '펼치기' : '접기'}
+                  aria-expanded={!collapsedCategories.has(category)}
+                  onClick={() => toggleCollapsed(category)}
+                >
+                  ▼
+                </button>
                 {renamingCategory === category ? (
                   <input
                     className="category-rename-input"
@@ -322,7 +341,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
               {styleEditCategory === category && (
                 <CategoryStylePicker category={category} onClose={() => setStyleEditCategory(null)} />
               )}
-              <ul>{list.map(renderPlaceRow)}</ul>
+              {!collapsedCategories.has(category) && <ul>{list.map(renderPlaceRow)}</ul>}
             </div>
           ))}
 

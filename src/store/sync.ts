@@ -2,6 +2,7 @@ import { usePlaceStore } from './usePlaceStore'
 import { supabase, isSupabaseConfigured, APP_STATE_ROW_ID } from '../lib/supabase'
 import type { CategoryStyle } from '../types'
 import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
+import { dedupePlaces } from '../lib/dedupePlaces'
 
 interface SyncableState {
   trips: ReturnType<typeof usePlaceStore.getState>['trips']
@@ -129,7 +130,9 @@ async function loadRemoteStateOnce(): Promise<void> {
     const remoteStyles = remote.categoryStyles && typeof remote.categoryStyles === 'object' ? remote.categoryStyles : {}
 
     const trips = mergeById(current.trips, remoteTrips)
-    const places = mergeById(current.places, remotePlaces)
+    // Two devices that each saved the same place before syncing produce two
+    // rows with different ids, which the id-union can't collapse on its own.
+    const places = dedupePlaces(mergeById(current.places, remotePlaces))
     const categoryOrder = mergeOrder(current.categoryOrder, remoteOrder)
     const categoryLabels = mergeRecord(current.categoryLabels, remoteLabels)
     const categoryStyles = mergeRecord(current.categoryStyles, remoteStyles)

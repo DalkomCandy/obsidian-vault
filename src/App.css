@@ -142,7 +142,9 @@
 .region-select {
   width: 100%;
   font: inherit;
-  padding: 8px 10px;
+  /* Matches .region-add-btn exactly so the two sit on one clean row. */
+  height: 32px;
+  padding: 0 8px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--chip-bg);
@@ -304,7 +306,7 @@
 }
 
 .region-group {
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 }
 
 .region-title {
@@ -314,11 +316,29 @@
   align-items: center;
   background: none;
   border: none;
-  padding: 8px;
+  padding: 5px 8px;
   font-weight: 600;
   font-size: 13.5px;
   color: var(--text);
   border-radius: 6px;
+}
+
+/* Twisty that collapses a category's place list. */
+.category-collapse-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 2px 3px 0;
+  width: 14px;
+  text-align: left;
+  transition: transform 0.15s ease;
+}
+
+.category-collapse-btn.collapsed {
+  transform: rotate(-90deg);
 }
 
 .region-title:hover {
@@ -624,10 +644,12 @@
 /* ---------- Route picker ---------- */
 
 .route-picker {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 220px;
+  padding-right: 22px;
 }
 
 .route-picker-title {
@@ -739,7 +761,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 6px 8px 6px 8px;
+  padding: 3px 8px;
   border-radius: 6px;
 }
 
@@ -832,28 +854,48 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
 
-/* Google's InfoWindow reserves an empty header row (.gm-style-iw-ch) above
-   the content for its close button, which pushes our text down toward the
-   middle of the bubble. Collapse it -- our own popups already reserve right
-   padding so the close button has somewhere to sit. */
-.gm-style-iw-ch {
-  padding-top: 0 !important;
-  min-height: 0 !important;
+/* Popups pass `headerDisabled` so Google doesn't reserve its fixed-height
+   close-button row above the content (which pushed our text toward the
+   middle of the bubble). These trim what's left of the default chrome and
+   keep the bubble from padding the content back down. */
+.gm-style-iw-ch,
+.gm-style-iw-chr {
+  display: none !important;
 }
 
 .gm-style-iw-c {
-  padding-top: 12px !important;
+  padding: 10px !important;
 }
 
 .gm-style-iw-d {
   overflow: auto !important;
+  max-height: none !important;
+}
+
+/* Our own close button, drawn in the right-hand gutter each popup reserves. */
+.popup-close {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  border: none;
+  background: none;
+  padding: 2px 5px;
+  font-size: 17px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.popup-close:hover {
+  color: #111827;
 }
 
 .popup-content {
+  position: relative;
   font-size: 11.5px;
   min-width: 216px;
   max-width: 288px;
-  padding: 12px 26px 10px 4px;
+  padding: 0 26px 0 4px;
   color: #111827;
   text-align: left;
 }
@@ -943,6 +985,48 @@
   }
 }
 
+.ai-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-status-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 11px;
+}
+
+.ai-status-btn:disabled {
+  opacity: 0.6;
+}
+
+.ai-status-target {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.ai-status-msg {
+  font-size: 11px;
+  line-height: 1.45;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.ai-status-msg.ok {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.ai-status-msg.fail {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
 .region-row {
   display: flex;
   gap: 6px;
@@ -1016,12 +1100,13 @@
 /* ---------- Quick add popup ---------- */
 
 .quick-add {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 15px;
   min-width: 312px;
   max-width: 360px;
-  padding: 8px 6px 6px 0;
+  padding: 0 26px 0 4px;
   text-align: left;
 }
 

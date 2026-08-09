@@ -14,6 +14,69 @@ export interface PlaceSummary {
   hours?: string
 }
 
+export interface OllamaDiagnosis {
+  ok: boolean
+  message: string
+}
+
+/**
+ * Walks the same path a real request takes, stopping at the first thing that
+ * breaks, so "AI가 안 돼요" turns into a specific cause: server unreachable
+ * (or CORS-blocked), model name wrong, or generation itself failing.
+ */
+export async function diagnoseOllama(): Promise<OllamaDiagnosis> {
+  let tagsRes: Response
+  try {
+    tagsRes = await fetch(`${OLLAMA_URL}/api/tags`)
+  } catch {
+    return {
+      ok: false,
+      message: `${OLLAMA_URL} 에 연결할 수 없어요. Ollama가 실행 중인지, 그리고 OLLAMA_ORIGINS 환경변수를 설정한 뒤 Ollama를 완전히 종료했다가 다시 켰는지 확인해주세요.`,
+    }
+  }
+  if (!tagsRes.ok) {
+    return { ok: false, message: `Ollama가 ${tagsRes.status} 응답을 보냈어요. 서버 상태를 확인해주세요.` }
+  }
+
+  let installed: string[] = []
+  try {
+    const data = await tagsRes.json()
+    installed = Array.isArray(data?.models)
+      ? data.models.map((m: { name?: string }) => m?.name).filter((n: unknown): n is string => typeof n === 'string')
+      : []
+  } catch {
+    return { ok: false, message: 'Ollama 응답을 읽지 못했어요.' }
+  }
+
+  // Ollama reports tags as "name:tag"; a bare configured name should still match.
+  const hasModel = installed.some((n) => n === OLLAMA_MODEL || n.split(':')[0] === OLLAMA_MODEL.split(':')[0])
+  if (!hasModel) {
+    return {
+      ok: false,
+      message: `연결은 됐지만 "${OLLAMA_MODEL}" 모델이 없어요. 설치된 모델: ${installed.join(', ') || '(없음)'} — .env의 VITE_OLLAMA_MODEL을 이 중 하나로 바꿔주세요.`,
+    }
+  }
+
+  try {
+    const res = await fetch(`${OLLAMA_URL}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: OLLAMA_MODEL, prompt: 'ping', stream: false }),
+    })
+    if (!res.ok) {
+      return { ok: false, message: `모델 실행 요청이 실패했어요 (${res.status}).` }
+    }
+  } catch {
+    return {
+      ok: false,
+      message:
+        '모델 목록은 읽었는데 생성 요청이 막혔어요. OLLAMA_ORIGINS가 이 페이지 주소를 허용하는지 확인해주세요 (POST 요청만 CORS 사전확인을 거칩니다).',
+    }
+  }
+
+  return { ok: true, message: `정상이에요. "${OLLAMA_MODEL}" 모델로 연결됐어요.` }
+}
+
 function buildPrompt(name: string, address: string | undefined, categoryLabels: string[]): string {
   const categoryLine =
     categoryLabels.length > 0

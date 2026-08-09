@@ -2,6 +2,7 @@ import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-
 import type { Category } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
+import { PopupClose } from './PopupClose'
 
 export interface DraftLocation {
   lat: number
@@ -45,8 +46,9 @@ export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: Qui
         <PlacePin color={NEUTRAL_COLOR} shape="pin" faded={false} scale={iconScale} />
       </AdvancedMarker>
       {marker && (
-        <InfoWindow anchor={marker} onCloseClick={onCancel}>
+        <InfoWindow anchor={marker} headerDisabled onCloseClick={onCancel}>
           <div className="quick-add">
+            <PopupClose onClick={onCancel} />
             <div className="quick-add-name">{draft.name || '(이름 없음)'}</div>
 
             {draft.rating != null && (

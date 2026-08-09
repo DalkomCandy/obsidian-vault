@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef, useMapsLibrary } from '@vis.gl/react-google-maps'
+import { PopupClose } from './PopupClose'
 import type { Place, TravelMode } from '../types'
 import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS, googleMapsDirectionsUrl } from '../types'
 
@@ -77,8 +78,9 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
     <>
       <AdvancedMarker ref={markerRef} position={{ lat: destination.lat, lng: destination.lng }} />
       {marker && (
-        <InfoWindow anchor={marker} onCloseClick={onCancel}>
+        <InfoWindow anchor={marker} headerDisabled onCloseClick={onCancel}>
           <div className="route-picker">
+            <PopupClose onClick={onCancel} />
             <div className="route-picker-title">
               {origin.name} → {destination.name}
             </div>

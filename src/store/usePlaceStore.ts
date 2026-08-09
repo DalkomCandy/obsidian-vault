@@ -9,6 +9,7 @@ import {
   formatTripLabel,
   todayDateString,
 } from '../types'
+import { dedupePlaces } from '../lib/dedupePlaces'
 
 const TRIPS_KEY = 'travel-map.trips'
 const PLACES_KEY = 'travel-map.places'
@@ -98,7 +99,11 @@ function loadTripsAndPlaces(): { trips: Trip[]; places: Place[] } {
         ? JSON.parse(rawTrips)
         : []
       const trips: Trip[] = parsedTrips.map((t) => ({ ...t, name: t.name ?? formatTripLabel(t.date) }))
-      return { trips, places: parsedPlaces as Place[] }
+      // Clears out any same-place-twice rows a past cross-device merge left
+      // behind, and writes the cleaned list back so it doesn't re-appear.
+      const places = dedupePlaces(parsedPlaces as Place[])
+      if (places.length !== parsedPlaces.length) persistPlaces(places)
+      return { trips, places }
     }
 
     const migrated = migrate(parsedPlaces)
@@ -187,8 +192,12 @@ function loadIconScale(): number {
 }
 
 function loadFadedOpacity(): number {
-  const stored = Number(localStorage.getItem(FADED_OPACITY_KEY))
-  return Number.isFinite(stored) && stored >= 0 && stored <= 1 ? stored : DEFAULT_FADED_OPACITY
+  // `Number(null)` is 0, which would sail through a `>= 0` check and make
+  // every faded marker invisible before the setting was ever touched.
+  const raw = localStorage.getItem(FADED_OPACITY_KEY)
+  if (raw === null) return DEFAULT_FADED_OPACITY
+  const stored = Number(raw)
+  return Number.isFinite(stored) && stored > 0 && stored <= 1 ? stored : DEFAULT_FADED_OPACITY
 }
 
 interface PlaceStore {

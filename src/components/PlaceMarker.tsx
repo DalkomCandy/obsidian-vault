@@ -4,6 +4,7 @@ import type { Place } from '../types'
 import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
+import { PopupClose } from './PopupClose'
 import { applySummaryToMemo, matchCategoryId, summarizePlace } from '../lib/ollama'
 
 interface PlaceMarkerProps {
@@ -66,8 +67,9 @@ export function PlaceMarker({
         />
       </AdvancedMarker>
       {isOpen && marker && (
-        <InfoWindow anchor={marker} onCloseClick={() => onOpenChange(false)}>
+        <InfoWindow anchor={marker} headerDisabled onCloseClick={() => onOpenChange(false)}>
           <div className="popup-content">
+            <PopupClose onClick={() => onOpenChange(false)} />
             <div className="popup-title">{place.name}</div>
             <div className="popup-meta">
               {categoryLabels[place.category] ?? FALLBACK_CATEGORY_LABEL}

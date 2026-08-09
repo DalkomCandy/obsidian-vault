@@ -75,7 +75,20 @@ export function PlaceMarker({
               {categoryLabels[place.category] ?? FALLBACK_CATEGORY_LABEL}
               {trip && ` · ${trip.region} · ${trip.name}`}
             </div>
+            {place.imageUrl && (
+              <img
+                className="popup-photo"
+                src={place.imageUrl}
+                alt=""
+                onError={(e) => e.currentTarget.remove()}
+              />
+            )}
             {place.memo && <div className="popup-memo">{place.memo}</div>}
+            {place.linkUrl && (
+              <a className="popup-link" href={place.linkUrl} target="_blank" rel="noopener noreferrer">
+                참고 링크 열기 ↗
+              </a>
+            )}
             {aiError && <div className="popup-ai-error">{aiError}</div>}
             <div className="popup-actions">
               <button onClick={() => onRouteFrom(place)}>경로</button>

@@ -10,6 +10,8 @@ export interface PlaceDraft {
   lng: number
   category: Category
   memo: string
+  imageUrl: string
+  linkUrl: string
 }
 
 interface PlaceFormProps {
@@ -22,6 +24,8 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
   const [name, setName] = useState(draft.name)
   const [category, setCategory] = useState<Category>(draft.category)
   const [memo, setMemo] = useState(draft.memo)
+  const [imageUrl, setImageUrl] = useState(draft.imageUrl)
+  const [linkUrl, setLinkUrl] = useState(draft.linkUrl)
 
   const place = usePlaceStore((s) => s.places.find((p) => p.id === draft.id))
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place?.tripId))
@@ -32,7 +36,14 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    onSave({ ...draft, name: name.trim(), category, memo: memo.trim() })
+    onSave({
+      ...draft,
+      name: name.trim(),
+      category,
+      memo: memo.trim(),
+      imageUrl: imageUrl.trim(),
+      linkUrl: linkUrl.trim(),
+    })
   }
 
   return (
@@ -74,6 +85,30 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
           <textarea value={memo} onChange={(e) => setMemo(e.target.value)} rows={3} placeholder="메모 (선택)" />
         </label>
 
+        <label>
+          사진 주소
+          <input
+            type="url"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+            placeholder="https://… (선택)"
+          />
+        </label>
+
+        <label>
+          참고 링크
+          <input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="블로그/예약 페이지 주소 (선택)"
+          />
+        </label>
+
+        {imageUrl.trim() && (
+          <img className="place-form-preview" src={imageUrl.trim()} alt="" onError={(e) => e.currentTarget.classList.add('broken')} />
+        )}
+
         <div className="form-actions">
           <button type="button" onClick={onCancel}>
             취소
@@ -95,5 +130,7 @@ export function draftFromPlace(place: Place): PlaceDraft {
     lng: place.lng,
     category: place.category,
     memo: place.memo,
+    imageUrl: place.imageUrl ?? '',
+    linkUrl: place.linkUrl ?? '',
   }
 }

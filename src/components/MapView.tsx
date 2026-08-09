@@ -189,6 +189,8 @@ export function MapView({
                 path: option.path,
                 durationText: option.durationText,
                 distanceText: option.distanceText,
+                durationSeconds: option.durationSeconds,
+                distanceMeters: option.distanceMeters,
               })
               onRouteCommitted(routeCandidate.origin.name, routeCandidate.destination.id, mode, option)
               setRouteCandidate(null)

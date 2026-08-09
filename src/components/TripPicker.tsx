@@ -10,6 +10,8 @@ interface TripPickerProps {
   onCreateTrip: (name: string) => void
   onRenameTrip: (id: string, name: string) => void
   onDeleteTrip: (id: string) => void
+  onImportPlaces: () => void
+  onExportTrip: () => void
 }
 
 export function TripPicker({
@@ -20,6 +22,8 @@ export function TripPicker({
   onCreateTrip,
   onRenameTrip,
   onDeleteTrip,
+  onImportPlaces,
+  onExportTrip,
 }: TripPickerProps) {
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState(formatTripLabel(todayDateString()))
@@ -95,6 +99,12 @@ export function TripPicker({
         <div className="trip-manage-row">
           <button type="button" onClick={startRename}>
             이름 수정
+          </button>
+          <button type="button" onClick={onImportPlaces} title="이 지역의 다른 여행에서 장소 복사해오기">
+            가져오기
+          </button>
+          <button type="button" onClick={onExportTrip} title="KML로 내보내기 (구글 내 지도에서 열 수 있어요)">
+            내보내기
           </button>
           <button
             type="button"

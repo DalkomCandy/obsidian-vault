@@ -8,6 +8,8 @@ export interface RouteOption {
   path: google.maps.LatLngLiteral[]
   durationText: string
   distanceText: string
+  durationSeconds: number
+  distanceMeters: number
 }
 
 const MODES: TravelMode[] = ['WALKING', 'DRIVING', 'TRANSIT']
@@ -50,6 +52,8 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
               path: route.overview_path.map((p) => ({ lat: p.lat(), lng: p.lng() })),
               durationText: leg.duration?.text ?? '',
               distanceText: leg.distance?.text ?? '',
+              durationSeconds: leg.duration?.value ?? 0,
+              distanceMeters: leg.distance?.value ?? 0,
             },
           ] as const
         } catch (err) {

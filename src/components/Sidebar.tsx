@@ -1,7 +1,16 @@
 import { useMemo, useState } from 'react'
 import type { Category, Place } from '../types'
-import { MAX_DAY_COUNT, NEW_CATEGORY_STYLE, dayLabel, tripDayCount } from '../types'
+import {
+  MAX_DAY_COUNT,
+  NEW_CATEGORY_STYLE,
+  dayLabel,
+  formatDistance,
+  formatDuration,
+  tripDayCount,
+} from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
+import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
+import { ImportPlacesDialog } from './ImportPlacesDialog'
 import { TripPicker } from './TripPicker'
 import { SettingsMenu } from './SettingsMenu'
 import { CategoryStylePicker } from './CategoryStylePicker'
@@ -38,6 +47,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const setTripDayCount = usePlaceStore((s) => s.setTripDayCount)
   const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
+  const routes = usePlaceStore((s) => s.routes)
   const trips = usePlaceStore((s) => s.trips)
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
   const setSelectedRegion = usePlaceStore((s) => s.setSelectedRegion)
@@ -63,6 +73,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const [regionDraft, setRegionDraft] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState<Set<Category>>(new Set())
   const [groupMode, setGroupModeState] = useState<GroupMode>(loadGroupMode)
+  const [importing, setImporting] = useState(false)
 
   const setGroupMode = (mode: GroupMode) => {
     localStorage.setItem(GROUP_MODE_KEY, mode)
@@ -104,6 +115,44 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
 
   const selectedTrip = selectedTripId ? tripById.get(selectedTripId) : undefined
   const dayCount = tripDayCount(selectedTrip)
+
+  const routeByPair = useMemo(() => {
+    const map = new Map<string, (typeof routes)[number]>()
+    for (const route of routes) map.set(`${route.originId}->${route.destinationId}`, route)
+    return map
+  }, [routes])
+
+  /**
+   * Totals the saved routes linking a day's places in the order they're
+   * listed. Legs with no saved route are counted separately rather than
+   * silently treated as zero, so a partial total never reads as complete.
+   */
+  const daySummary = (list: Place[]) => {
+    let seconds = 0
+    let meters = 0
+    let missing = 0
+    for (let i = 0; i < list.length - 1; i++) {
+      const from = list[i]
+      const to = list[i + 1]
+      const route = routeByPair.get(`${from.id}->${to.id}`) ?? routeByPair.get(`${to.id}->${from.id}`)
+      if (route?.durationSeconds) {
+        seconds += route.durationSeconds
+        meters += route.distanceMeters ?? 0
+      } else {
+        missing += 1
+      }
+    }
+    return { seconds, meters, missing }
+  }
+
+  const handleExport = () => {
+    if (!selectedTrip) return
+    const tripPlaces = places.filter((p) => p.tripId === selectedTrip.id)
+    const placeIds = new Set(tripPlaces.map((p) => p.id))
+    const tripRoutes = routes.filter((r) => placeIds.has(r.originId) && placeIds.has(r.destinationId))
+    const kml = buildTripKml(selectedTrip, tripPlaces, tripRoutes, categoryLabels)
+    downloadKml(kmlFilename(selectedTrip), kml)
+  }
 
   // Every day gets a section even when empty -- an empty day still needs to
   // be a drop target, and seeing the gaps is the point of the itinerary view.
@@ -224,32 +273,54 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
     </li>
   )
 
-  const renderDaySection = (key: string, title: string, list: Place[], day: number | undefined) => (
-    <div
-      className="region-group"
-      key={key}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault()
-        const draggedFromTransfer = e.dataTransfer.getData('text/plain')
-        if (draggedFromTransfer) setPlaceDay(draggedFromTransfer, day)
-        setDraggedId(null)
-      }}
-    >
-      <div className="region-title static">
-        <span className={day === undefined ? 'day-title unscheduled' : 'day-title'}>{title}</span>
-        <span className="region-count">{list.length}개</span>
+  const renderDaySection = (key: string, title: string, list: Place[], day: number | undefined) => {
+    const summary = day === undefined ? null : daySummary(list)
+    return (
+      <div
+        className="region-group"
+        key={key}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          const draggedFromTransfer = e.dataTransfer.getData('text/plain')
+          if (draggedFromTransfer) setPlaceDay(draggedFromTransfer, day)
+          setDraggedId(null)
+        }}
+      >
+        <div className="region-title static">
+          <span className={day === undefined ? 'day-title unscheduled' : 'day-title'}>{title}</span>
+          <span className="region-count">{list.length}개</span>
+        </div>
+        {summary && (summary.seconds > 0 || summary.missing > 0) && (
+          <div className="day-summary">
+            {summary.seconds > 0 && (
+              <span>
+                이동 {formatDuration(summary.seconds)} · {formatDistance(summary.meters)}
+              </span>
+            )}
+            {summary.missing > 0 && <span className="day-summary-missing">경로 {summary.missing}구간 미확인</span>}
+          </div>
+        )}
+        {list.length === 0 ? (
+          <p className="day-empty">여기로 장소를 끌어다 놓으세요</p>
+        ) : (
+          <ul>{list.map(renderPlaceRow)}</ul>
+        )}
       </div>
-      {list.length === 0 ? (
-        <p className="day-empty">여기로 장소를 끌어다 놓으세요</p>
-      ) : (
-        <ul>{list.map(renderPlaceRow)}</ul>
-      )}
-    </div>
-  )
+    )
+  }
 
   return (
     <aside className="sidebar" style={{ width, minWidth: width }}>
+      {importing && selectedTrip && (
+        <ImportPlacesDialog
+          targetTrip={selectedTrip}
+          onClose={() => setImporting(false)}
+          onImported={(count) =>
+            alert(count > 0 ? `${count}개 장소를 가져왔어요.` : '가져올 새 장소가 없었어요 (이미 저장된 장소는 건너뜁니다).')
+          }
+        />
+      )}
       <div className="sidebar-header-top">
         <div className="region-row">
           <select
@@ -306,6 +377,8 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
           }}
           onRenameTrip={renameTrip}
           onDeleteTrip={removeTrip}
+          onImportPlaces={() => setImporting(true)}
+          onExportTrip={handleExport}
         />
       )}
 

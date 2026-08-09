@@ -223,6 +223,7 @@ interface PlaceStore {
   removePlace: (id: string) => void
   movePlace: (draggedId: string, targetId: string, align?: 'category' | 'day') => void
   setPlaceCategory: (id: string, category: Category) => void
+  copyPlacesToTrip: (placeIds: string[], targetTripId: string) => number
   setPlaceDay: (id: string, day: number | undefined) => void
   setTripDayCount: (tripId: string, dayCount: number) => void
   saveRoute: (route: Omit<SavedRoute, 'id' | 'createdAt'>) => void
@@ -356,6 +357,41 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     const places = get().places.map((p) => (p.id === id ? { ...p, category } : p))
     set({ places })
     persistPlaces(places)
+  },
+
+  // Copies places from an earlier trip into the current one. Day assignments
+  // are deliberately dropped -- the new trip's schedule is its own -- and
+  // anything already saved at that spot is skipped so repeated imports
+  // don't pile up duplicates.
+  copyPlacesToTrip: (placeIds, targetTripId) => {
+    const current = get().places
+    const source = current.filter((p) => placeIds.includes(p.id))
+    const existing = current.filter((p) => p.tripId === targetTripId)
+
+    const copies: Place[] = []
+    for (const place of source) {
+      const alreadyThere = existing.some(
+        (p) =>
+          p.name.trim() === place.name.trim() &&
+          Math.abs(p.lat - place.lat) < 0.0001 &&
+          Math.abs(p.lng - place.lng) < 0.0001,
+      )
+      if (alreadyThere) continue
+      const copy: Place = {
+        ...place,
+        id: crypto.randomUUID(),
+        tripId: targetTripId,
+        createdAt: new Date().toISOString(),
+      }
+      delete copy.day
+      copies.push(copy)
+    }
+
+    if (copies.length === 0) return 0
+    const places = [...current, ...copies]
+    set({ places })
+    persistPlaces(places)
+    return copies.length
   },
 
   setPlaceDay: (id, day) => {

@@ -198,6 +198,8 @@ function App() {
       name: saved.name,
       category: saved.category,
       memo: saved.memo,
+      imageUrl: saved.imageUrl || undefined,
+      linkUrl: saved.linkUrl || undefined,
     })
     setEditDraft(null)
   }

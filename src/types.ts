@@ -41,6 +41,10 @@ export interface Place {
   createdAt: string
   /** 1-based day within the trip. Absent means "not scheduled yet". */
   day?: number
+  /** Image URL shown in the place's popup. */
+  imageUrl?: string
+  /** Reference link (blog post, booking page, …) opened from the popup. */
+  linkUrl?: string
 }
 
 export const DEFAULT_DAY_COUNT = 3
@@ -160,7 +164,22 @@ export interface SavedRoute {
   path: { lat: number; lng: number }[]
   durationText: string
   distanceText: string
+  /** Raw values, so day totals can be summed instead of parsed back out of the text. */
+  durationSeconds?: number
+  distanceMeters?: number
   createdAt: string
+}
+
+export function formatDuration(totalSeconds: number): string {
+  const minutes = Math.round(totalSeconds / 60)
+  if (minutes < 60) return `${minutes}분`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest === 0 ? `${hours}시간` : `${hours}시간 ${rest}분`
+}
+
+export function formatDistance(totalMeters: number): string {
+  return totalMeters < 1000 ? `${Math.round(totalMeters)} m` : `${(totalMeters / 1000).toFixed(1)} km`
 }
 
 /**

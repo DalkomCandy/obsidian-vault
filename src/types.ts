@@ -45,6 +45,25 @@ export interface Place {
   imageUrl?: string
   /** Reference link (blog post, booking page, …) opened from the popup. */
   linkUrl?: string
+  /** Planned visit time as 'HH:MM'. Absent means "no fixed time". */
+  time?: string
+}
+
+/** Valid 'HH:MM' in 24-hour form, or empty for "clear the time". */
+export function isValidTime(value: string): boolean {
+  return value === '' || /^([01]\d|2[0-3]):[0-5]\d$/.test(value)
+}
+
+/**
+ * Orders a day's places the way they'll actually be visited: anything with a
+ * set time first, in clock order, then the untimed ones in whatever manual
+ * order they were dragged into.
+ */
+export function sortByVisitOrder(places: Place[]): Place[] {
+  const timed = places.filter((p) => p.time)
+  const untimed = places.filter((p) => !p.time)
+  timed.sort((a, b) => (a.time as string).localeCompare(b.time as string))
+  return [...timed, ...untimed]
 }
 
 export const DEFAULT_DAY_COUNT = 3
@@ -187,6 +206,24 @@ export function formatDistance(totalMeters: number): string {
  * the Directions API can't answer -- most notably transit in Japan, which
  * the consumer app covers but the API does not.
  */
+/**
+ * Opens turn-by-turn navigation to a place. Leaving the origin out makes
+ * Google Maps start from wherever the phone currently is, which is what you
+ * want standing on a street corner -- and on mobile this hands off to the
+ * installed Google Maps app rather than the web page.
+ */
+export function googleMapsNavigationUrl(
+  destination: { lat: number; lng: number },
+  mode: TravelMode = 'WALKING',
+): string {
+  const params = new URLSearchParams({
+    api: '1',
+    destination: `${destination.lat},${destination.lng}`,
+    travelmode: mode.toLowerCase(),
+  })
+  return `https://www.google.com/maps/dir/?${params.toString()}`
+}
+
 export function googleMapsDirectionsUrl(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },

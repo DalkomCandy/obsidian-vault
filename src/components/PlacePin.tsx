@@ -8,6 +8,7 @@ interface PlacePinProps {
   scale?: number
   iconUrl?: string
   fadedOpacity?: number
+  visitOrder?: number
 }
 
 /**
@@ -224,13 +225,22 @@ function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
   }
 }
 
-export function PlacePin({ color, shape, faded, scale = 1, iconUrl, fadedOpacity = 0.38 }: PlacePinProps) {
+export function PlacePin({
+  color,
+  shape,
+  faded,
+  scale = 1,
+  iconUrl,
+  fadedOpacity = 0.38,
+  visitOrder,
+}: PlacePinProps) {
   const [iconFailed, setIconFailed] = useState(false)
   const showGoogleIcon = Boolean(iconUrl) && !iconFailed
 
   return (
     <div
       style={{
+        position: 'relative',
         opacity: faded ? fadedOpacity : 1,
         cursor: 'pointer',
         transform: scale !== 1 ? `scale(${scale})` : undefined,
@@ -242,6 +252,7 @@ export function PlacePin({ color, shape, faded, scale = 1, iconUrl, fadedOpacity
       ) : (
         <ShapeSvg color={color} shape={shape} />
       )}
+      {visitOrder !== undefined && <span className="pin-order-badge">{visitOrder}</span>}
     </div>
   )
 }

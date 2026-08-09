@@ -9,7 +9,15 @@ import type { RouteOption } from './components/RouteModePicker'
 import { usePlaceStore } from './store/usePlaceStore'
 import { GOOGLE_MAPS_API_KEY } from './lib/googleMaps'
 import { loadRemoteState } from './store/sync'
-import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS, type Category, type Place, type TravelMode } from './types'
+import { useOnlineStatus } from './hooks/useOnlineStatus'
+import {
+  TRAVEL_MODE_EMOJI,
+  TRAVEL_MODE_LABELS,
+  sortByVisitOrder,
+  type Category,
+  type Place,
+  type TravelMode,
+} from './types'
 import './App.css'
 
 const NEEDS_TRIP_HINT = '먼저 지역과 여행(날짜)을 선택하거나 만들어주세요'
@@ -42,6 +50,7 @@ function App() {
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const selectedCategories = usePlaceStore((s) => s.selectedCategories)
   const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
+  const focusedDay = usePlaceStore((s) => s.focusedDay)
   const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const addPlace = usePlaceStore((s) => s.addPlace)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
@@ -55,6 +64,7 @@ function App() {
   const hintTimer = useRef<number | undefined>(undefined)
   const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth)
   const sidebarWidthRef = useRef(sidebarWidth)
+  const online = useOnlineStatus()
 
   useEffect(() => {
     loadRemoteState()
@@ -96,15 +106,28 @@ function App() {
         if (selectedTripId && place.tripId !== selectedTripId && !activeTripCategories?.has(place.category)) {
           return false
         }
+        // Focusing a day narrows the map to that day's plan; other trips'
+        // reference pins stay, since they're what the focus is compared against.
+        if (focusedDay !== null && place.tripId === selectedTripId && place.day !== focusedDay) return false
         return true
       }),
-    [places, tripById, selectedRegion, selectedCategories, selectedTripId, activeTripCategories],
+    [places, tripById, selectedRegion, selectedCategories, selectedTripId, activeTripCategories, focusedDay],
   )
 
-  const fitPlaces = useMemo(
-    () => ((selectedRegion || selectedTripId) && sidebarPlaces.length ? sidebarPlaces : null),
-    [selectedRegion, selectedTripId, sidebarPlaces],
-  )
+  // Numbers the focused day's stops in visit order so the map reads as a route.
+  const visitOrderByPlaceId = useMemo(() => {
+    if (focusedDay === null || !selectedTripId) return null
+    const ofDay = sidebarPlaces.filter((p) => p.day === focusedDay)
+    const map = new Map<string, number>()
+    sortByVisitOrder(ofDay).forEach((place, index) => map.set(place.id, index + 1))
+    return map
+  }, [focusedDay, selectedTripId, sidebarPlaces])
+
+  const fitPlaces = useMemo(() => {
+    if (!selectedRegion && !selectedTripId) return null
+    const scoped = focusedDay !== null ? sidebarPlaces.filter((p) => p.day === focusedDay) : sidebarPlaces
+    return scoped.length ? scoped : null
+  }, [selectedRegion, selectedTripId, sidebarPlaces, focusedDay])
 
   const showHint = (message: string) => {
     setHint(message)
@@ -181,6 +204,8 @@ function App() {
       lng: draftLocation.lng,
       category,
       memo: draftLocation.address ?? '',
+      // While a day is focused, anything added is part of that day's plan.
+      ...(focusedDay !== null ? { day: focusedDay } : {}),
     })
     setDraftLocation(null)
   }
@@ -200,6 +225,7 @@ function App() {
       memo: saved.memo,
       imageUrl: saved.imageUrl || undefined,
       linkUrl: saved.linkUrl || undefined,
+      time: saved.time || undefined,
     })
     setEditDraft(null)
   }
@@ -249,9 +275,15 @@ function App() {
           onTouchStart={handleResizeStart}
         />
         <main className="map-pane">
+          {!online && (
+            <div className="offline-banner">
+              오프라인 상태예요. 저장된 계획은 그대로 볼 수 있지만, 지도 타일·검색·경로는 연결된 뒤에 다시 동작해요.
+            </div>
+          )}
           {hint && <div className="map-hint">{hint}</div>}
           <MapView
             places={mapPlaces}
+            visitOrderByPlaceId={visitOrderByPlaceId}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}

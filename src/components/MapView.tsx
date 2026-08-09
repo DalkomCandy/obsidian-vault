@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Map, useMapsLibrary, type MapMouseEvent } from '@vis.gl/react-google-maps'
+import { Map, useMapsLibrary, useMap, type MapMouseEvent } from '@vis.gl/react-google-maps'
 import type { Category, Place, TravelMode } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { GOOGLE_MAPS_MAP_ID, DEFAULT_CENTER, DEFAULT_ZOOM } from '../lib/googleMaps'
@@ -10,9 +10,30 @@ import type { SearchResult } from './SearchBox'
 import { QuickAddMarker, type DraftLocation } from './QuickAddMarker'
 import { RouteModePicker, type RouteOption } from './RouteModePicker'
 import { RouteLine } from './RouteLine'
+import { CurrentLocationMarker } from './CurrentLocationMarker'
+import { useCurrentLocation } from '../hooks/useCurrentLocation'
+
+/** Recentres the map on the tracked position without restarting the watch. */
+function RecenterButton({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap()
+  return (
+    <button
+      type="button"
+      className="map-control-btn"
+      title="현재 위치로 이동"
+      onClick={() => {
+        map?.panTo({ lat, lng })
+        map?.setZoom(16)
+      }}
+    >
+      ⌖
+    </button>
+  )
+}
 
 interface MapViewProps {
   places: Place[]
+  visitOrderByPlaceId: Map<string, number> | null
   focusPlace: Place | null
   fitPlaces: Place[] | null
   draftLocation: DraftLocation | null
@@ -30,6 +51,7 @@ interface MapViewProps {
 
 export function MapView({
   places,
+  visitOrderByPlaceId,
   focusPlace,
   fitPlaces,
   draftLocation,
@@ -51,6 +73,8 @@ export function MapView({
   const placesLib = useMapsLibrary('places')
 
   const [routeCandidate, setRouteCandidate] = useState<{ origin: Place; destination: Place } | null>(null)
+  const { location, status, error: locationError, toggle: toggleLocation, active: locationActive } = useCurrentLocation()
+  const [pendingRecenter, setPendingRecenter] = useState(false)
 
   const clearRouteState = useCallback(() => {
     setRouteCandidate(null)
@@ -110,6 +134,7 @@ export function MapView({
           <PlaceMarker
             key={place.id}
             place={place}
+            visitOrder={visitOrderByPlaceId?.get(place.id)}
             faded={faded}
             isOpen={place.id === openPlaceId}
             onMarkerClick={() => {
@@ -139,6 +164,7 @@ export function MapView({
       }),
     [
       places,
+      visitOrderByPlaceId,
       selectedTripId,
       openPlaceId,
       onOpenPlaceChange,
@@ -153,6 +179,7 @@ export function MapView({
   return (
     <>
       <SearchBox onPlaceSelected={onLocationPicked} />
+      {locationError && <div className="map-location-error">{locationError}</div>}
       <Map
         className="map-container"
         mapId={GOOGLE_MAPS_MAP_ID}
@@ -201,7 +228,32 @@ export function MapView({
         {visibleRoutes.map((route) => (
           <RouteLine key={route.id} route={route} onDelete={() => removeRoute(route.id)} />
         ))}
+        {location && locationActive && (
+          <CurrentLocationMarker
+            location={location}
+            centerOnFirstFix={pendingRecenter}
+            onCentered={() => setPendingRecenter(false)}
+          />
+        )}
       </Map>
+
+      {/* Sibling of <Map>, not a child: if the Maps API fails to load (which
+          is exactly what happens offline) the map renders nothing, and
+          controls nested inside it would disappear along with it. */}
+      <div className="map-controls">
+        <button
+          type="button"
+          className={locationActive ? 'map-control-btn active' : 'map-control-btn'}
+          title={locationActive ? '위치 추적 끄기' : '현재 위치 표시'}
+          onClick={() => {
+            if (!locationActive) setPendingRecenter(true)
+            toggleLocation()
+          }}
+        >
+          {status === 'locating' ? <span className="btn-spinner" /> : '📍'}
+        </button>
+        {location && locationActive && <RecenterButton lat={location.lat} lng={location.lng} />}
+      </div>
     </>
   )
 }

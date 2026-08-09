@@ -985,6 +985,129 @@
   }
 }
 
+/* ---------- On-the-ground: location, offline, navigation ---------- */
+
+.map-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 108px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 5;
+}
+
+.map-control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-control-btn.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25), 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+/* Google's own blue dot, so the meaning is instantly recognizable. */
+.current-location-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #1a73e8;
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 0 1px rgba(26, 115, 232, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.offline-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  max-width: min(560px, calc(100% - 24px));
+  background: #78350f;
+  color: #fef3c7;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+.map-location-error {
+  position: absolute;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+  max-width: min(460px, calc(100% - 24px));
+  background: #7f1d1d;
+  color: #fee2e2;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* Visit-order badge riding on a pin during day focus. */
+.pin-order-badge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #111827;
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 13px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.popup-action-link {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 4px;
+  padding: 5px 11px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #1f2430;
+  text-decoration: none;
+}
+
+.popup-action-link.primary {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.popup-time {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #111827;
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
 /* ---------- Day / itinerary planning ---------- */
 
 .group-mode-row {
@@ -1147,6 +1270,76 @@
 
 .day-title.unscheduled {
   color: var(--text-muted);
+}
+
+.day-title-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--text);
+  border-radius: 4px;
+}
+
+.day-title-btn:hover {
+  background: var(--chip-bg);
+}
+
+.day-title-btn.focused {
+  color: #2563eb;
+}
+
+.day-focus-mark {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffffff;
+  background: #2563eb;
+  border-radius: 999px;
+  padding: 1px 6px;
+}
+
+.region-group.day-focused {
+  background: var(--chip-bg);
+  border-radius: 8px;
+  padding-bottom: 2px;
+}
+
+.place-time-btn {
+  flex-shrink: 0;
+  width: 46px;
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 2px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: var(--chip-bg);
+  color: var(--text);
+  text-align: center;
+}
+
+.place-time-btn.unset {
+  background: none;
+  color: var(--text-muted);
+}
+
+.place-item:hover .place-time-btn {
+  border-color: var(--border);
+}
+
+/* Only shown while editing, so it can afford the width the native control
+   needs for a locale that renders AM/PM. */
+.place-time-input.editing {
+  flex-shrink: 0;
+  width: 104px;
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 3px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 .day-empty {

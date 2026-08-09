@@ -212,6 +212,12 @@ interface PlaceStore {
   selectedTripId: string | null
   selectedCategories: Category[]
   activeAddCategory: Category | null
+  /**
+   * The day currently being worked on. Doubles as the map filter and as the
+   * day newly-saved places land on, so "planning day 2" is a single state
+   * rather than two settings that can disagree.
+   */
+  focusedDay: number | null
   iconScale: number
   fadedOpacity: number
 
@@ -225,6 +231,8 @@ interface PlaceStore {
   setPlaceCategory: (id: string, category: Category) => void
   copyPlacesToTrip: (placeIds: string[], targetTripId: string) => number
   setPlaceDay: (id: string, day: number | undefined) => void
+  setPlaceTime: (id: string, time: string | undefined) => void
+  setFocusedDay: (day: number | null) => void
   setTripDayCount: (tripId: string, dayCount: number) => void
   saveRoute: (route: Omit<SavedRoute, 'id' | 'createdAt'>) => void
   removeRoute: (id: string) => void
@@ -264,6 +272,7 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   selectedTripId: null,
   selectedCategories: [...initialCategories.order],
   activeAddCategory: null,
+  focusedDay: null,
   iconScale: loadIconScale(),
   fadedOpacity: loadFadedOpacity(),
 
@@ -406,6 +415,20 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     persistPlaces(places)
   },
 
+  setPlaceTime: (id, time) => {
+    const places = get().places.map((p) => {
+      if (p.id !== id) return p
+      const next = { ...p }
+      if (!time) delete next.time
+      else next.time = time
+      return next
+    })
+    set({ places })
+    persistPlaces(places)
+  },
+
+  setFocusedDay: (day) => set({ focusedDay: day }),
+
   setTripDayCount: (tripId, dayCount) => {
     const clamped = Math.min(MAX_DAY_COUNT, Math.max(1, Math.round(dayCount)))
     const trips = get().trips.map((t) => (t.id === tripId ? { ...t, dayCount: clamped } : t))
@@ -417,7 +440,8 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
       delete next.day
       return next
     })
-    set({ trips, places })
+    const focusedDay = get().focusedDay
+    set({ trips, places, focusedDay: focusedDay !== null && focusedDay > clamped ? null : focusedDay })
     persistTrips(trips)
     persistPlaces(places)
   },
@@ -439,8 +463,9 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     persistRoutes(routes)
   },
 
-  setSelectedRegion: (region) => set({ selectedRegion: region, selectedTripId: null }),
-  setSelectedTripId: (tripId) => set({ selectedTripId: tripId }),
+  // Day focus belongs to one trip, so it can't survive switching away.
+  setSelectedRegion: (region) => set({ selectedRegion: region, selectedTripId: null, focusedDay: null }),
+  setSelectedTripId: (tripId) => set({ selectedTripId: tripId, focusedDay: null }),
 
   toggleCategoryFilter: (category) => {
     const current = get().selectedCategories

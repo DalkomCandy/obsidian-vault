@@ -12,6 +12,7 @@ export interface PlaceDraft {
   memo: string
   imageUrl: string
   linkUrl: string
+  time: string
 }
 
 interface PlaceFormProps {
@@ -26,6 +27,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
   const [memo, setMemo] = useState(draft.memo)
   const [imageUrl, setImageUrl] = useState(draft.imageUrl)
   const [linkUrl, setLinkUrl] = useState(draft.linkUrl)
+  const [time, setTime] = useState(draft.time)
 
   const place = usePlaceStore((s) => s.places.find((p) => p.id === draft.id))
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place?.tripId))
@@ -43,6 +45,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
       memo: memo.trim(),
       imageUrl: imageUrl.trim(),
       linkUrl: linkUrl.trim(),
+      time,
     })
   }
 
@@ -79,6 +82,11 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
             </span>
           </label>
         </div>
+
+        <label>
+          방문 시간
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        </label>
 
         <label>
           메모
@@ -132,5 +140,6 @@ export function draftFromPlace(place: Place): PlaceDraft {
     memo: place.memo,
     imageUrl: place.imageUrl ?? '',
     linkUrl: place.linkUrl ?? '',
+    time: place.time ?? '',
   }
 }

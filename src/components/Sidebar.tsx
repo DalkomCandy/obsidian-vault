@@ -6,11 +6,13 @@ import {
   dayLabel,
   formatDistance,
   formatDuration,
+  sortByVisitOrder,
   tripDayCount,
 } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
 import { ImportPlacesDialog } from './ImportPlacesDialog'
+import { TimeCell } from './TimeCell'
 import { TripPicker } from './TripPicker'
 import { SettingsMenu } from './SettingsMenu'
 import { CategoryStylePicker } from './CategoryStylePicker'
@@ -44,7 +46,10 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const movePlace = usePlaceStore((s) => s.movePlace)
   const setPlaceCategory = usePlaceStore((s) => s.setPlaceCategory)
   const setPlaceDay = usePlaceStore((s) => s.setPlaceDay)
+  const setPlaceTime = usePlaceStore((s) => s.setPlaceTime)
   const setTripDayCount = usePlaceStore((s) => s.setTripDayCount)
+  const focusedDay = usePlaceStore((s) => s.focusedDay)
+  const setFocusedDay = usePlaceStore((s) => s.setFocusedDay)
   const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const routes = usePlaceStore((s) => s.routes)
@@ -169,7 +174,12 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
       map.set(place.day, list)
     }
     const days = Array.from({ length: dayCount }, (_, i) => i + 1)
-    return { days: days.map((d) => [d, map.get(d) ?? []] as const), unscheduled }
+    // Within a day, timed stops lead in clock order -- that's the order the
+    // travel totals and the map's numbering both read from.
+    return {
+      days: days.map((d) => [d, sortByVisitOrder(map.get(d) ?? [])] as const),
+      unscheduled,
+    }
   }, [places, dayCount])
 
   const groupedByTrip = useMemo(() => {
@@ -242,6 +252,9 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
       <button className="place-main" onClick={() => onFocusPlace(place)}>
         <span className="place-name">{place.name}</span>
       </button>
+      {selectedTripId && groupMode === 'day' && (
+        <TimeCell value={place.time} onChange={(time) => setPlaceTime(place.id, time)} />
+      )}
       {selectedTripId && (
         <select
           className={place.day === undefined ? 'place-day-select unset' : 'place-day-select'}
@@ -275,9 +288,10 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
 
   const renderDaySection = (key: string, title: string, list: Place[], day: number | undefined) => {
     const summary = day === undefined ? null : daySummary(list)
+    const focused = day !== undefined && day === focusedDay
     return (
       <div
-        className="region-group"
+        className={focused ? 'region-group day-focused' : 'region-group'}
         key={key}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
@@ -288,7 +302,19 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
         }}
       >
         <div className="region-title static">
-          <span className={day === undefined ? 'day-title unscheduled' : 'day-title'}>{title}</span>
+          {day === undefined ? (
+            <span className="day-title unscheduled">{title}</span>
+          ) : (
+            <button
+              type="button"
+              className={focused ? 'day-title day-title-btn focused' : 'day-title day-title-btn'}
+              title={focused ? '이 날짜만 보기 해제' : '이 날짜만 지도에 보기 (새 장소도 이 날로 저장돼요)'}
+              onClick={() => setFocusedDay(focused ? null : day)}
+            >
+              {title}
+              {focused && <span className="day-focus-mark">보는 중</span>}
+            </button>
+          )}
           <span className="region-count">{list.length}개</span>
         </div>
         {summary && (summary.seconds > 0 || summary.missing > 0) && (

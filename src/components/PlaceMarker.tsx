@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
-import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
+import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE, googleMapsNavigationUrl } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 import { PopupClose } from './PopupClose'
@@ -9,6 +9,8 @@ import { applySummaryToMemo, matchCategoryId, summarizePlace } from '../lib/olla
 
 interface PlaceMarkerProps {
   place: Place
+  /** Position in the focused day's plan, drawn as a badge on the pin. */
+  visitOrder?: number
   faded: boolean
   isOpen: boolean
   onMarkerClick: () => void
@@ -19,6 +21,7 @@ interface PlaceMarkerProps {
 
 export function PlaceMarker({
   place,
+  visitOrder,
   faded,
   isOpen,
   onMarkerClick,
@@ -64,6 +67,7 @@ export function PlaceMarker({
           faded={faded}
           scale={iconScale}
           fadedOpacity={fadedOpacity}
+          visitOrder={visitOrder}
         />
       </AdvancedMarker>
       {isOpen && marker && (
@@ -72,6 +76,7 @@ export function PlaceMarker({
             <PopupClose onClick={() => onOpenChange(false)} />
             <div className="popup-title">{place.name}</div>
             <div className="popup-meta">
+              {place.time && <span className="popup-time">{place.time}</span>}
               {categoryLabels[place.category] ?? FALLBACK_CATEGORY_LABEL}
               {trip && ` · ${trip.region} · ${trip.name}`}
             </div>
@@ -91,6 +96,16 @@ export function PlaceMarker({
             )}
             {aiError && <div className="popup-ai-error">{aiError}</div>}
             <div className="popup-actions">
+              {/* Hands off to the Google Maps app for real turn-by-turn
+                  walking directions from wherever you're standing. */}
+              <a
+                className="popup-action-link primary"
+                href={googleMapsNavigationUrl(place)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                길찾기
+              </a>
               <button onClick={() => onRouteFrom(place)}>경로</button>
               <button onClick={() => onEditPlace(place)}>수정</button>
               <button onClick={handleAiSummarize} disabled={aiLoading}>

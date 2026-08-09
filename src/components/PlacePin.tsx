@@ -10,9 +10,10 @@ interface PlacePinProps {
 }
 
 /**
- * White circular badge holding a Google-provided icon, tinted with the
- * category color via a CSS mask (the icon itself is just a black glyph, so
- * rendering it as a plain <img> would ignore whatever color the user picks).
+ * Colored circular badge (like Google's own POI pins) holding a
+ * Google-provided icon in white. The icon itself is just a black glyph, so
+ * it's rendered via a CSS mask -- once as the white glyph on top of the
+ * colored circle, matching how our own vector Badge shapes already look.
  * A visually-hidden <img> of the same source still drives the fallback to
  * the vector shape if the icon somehow fails to load.
  */
@@ -23,8 +24,8 @@ function GoogleIconBadge({ iconUrl, color, onError }: { iconUrl: string; color: 
         width: 28,
         height: 28,
         borderRadius: '50%',
-        background: 'white',
-        border: '1.5px solid #d1d5db',
+        background: color,
+        border: '2px solid white',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -34,9 +35,9 @@ function GoogleIconBadge({ iconUrl, color, onError }: { iconUrl: string; color: 
     >
       <div
         style={{
-          width: 18,
-          height: 18,
-          backgroundColor: color,
+          width: 16,
+          height: 16,
+          backgroundColor: 'white',
           // The data-URI SVGs contain unescaped single quotes (from their own
           // xmlns='...' attributes), which an unquoted url() token rejects
           // outright -- wrapping it in double quotes keeps it valid.

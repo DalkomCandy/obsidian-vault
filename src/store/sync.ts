@@ -6,6 +6,7 @@ import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
 interface SyncableState {
   trips: ReturnType<typeof usePlaceStore.getState>['trips']
   places: ReturnType<typeof usePlaceStore.getState>['places']
+  routes: ReturnType<typeof usePlaceStore.getState>['routes']
   categoryOrder: ReturnType<typeof usePlaceStore.getState>['categoryOrder']
   categoryLabels: ReturnType<typeof usePlaceStore.getState>['categoryLabels']
   categoryStyles: ReturnType<typeof usePlaceStore.getState>['categoryStyles']
@@ -16,6 +17,7 @@ function snapshot(): SyncableState {
   return {
     trips: s.trips,
     places: s.places,
+    routes: s.routes,
     categoryOrder: s.categoryOrder,
     categoryLabels: s.categoryLabels,
     categoryStyles: s.categoryStyles,
@@ -121,6 +123,7 @@ async function loadRemoteStateOnce(): Promise<void> {
     const current = usePlaceStore.getState()
     const remoteTrips = Array.isArray(remote.trips) ? remote.trips : []
     const remotePlaces = Array.isArray(remote.places) ? remote.places : []
+    const remoteRoutes = Array.isArray(remote.routes) ? remote.routes : []
     const remoteOrder = Array.isArray(remote.categoryOrder) ? remote.categoryOrder : []
     const remoteLabels = remote.categoryLabels && typeof remote.categoryLabels === 'object' ? remote.categoryLabels : {}
     const remoteStyles = remote.categoryStyles && typeof remote.categoryStyles === 'object' ? remote.categoryStyles : {}
@@ -131,12 +134,20 @@ async function loadRemoteStateOnce(): Promise<void> {
     const categoryLabels = mergeRecord(current.categoryLabels, remoteLabels)
     const categoryStyles = mergeRecord(current.categoryStyles, remoteStyles)
 
+    // A route whose endpoints didn't survive the merge would draw a line to
+    // nowhere, so drop those rather than carrying them forward.
+    const placeIds = new Set(places.map((p) => p.id))
+    const routes = mergeById(current.routes, remoteRoutes).filter(
+      (r) => placeIds.has(r.originId) && placeIds.has(r.destinationId),
+    )
+
     const sanitized = sanitizeCategoryMaps(categoryOrder, categoryLabels, categoryStyles, places)
-    const merged = { trips, places, ...sanitized }
+    const merged = { trips, places, routes, ...sanitized }
 
     const changed =
       trips.length !== remoteTrips.length ||
       places.length !== remotePlaces.length ||
+      routes.length !== remoteRoutes.length ||
       categoryOrder.length !== remoteOrder.length
 
     applyingRemote = true
@@ -157,6 +168,7 @@ if (isSupabaseConfigured) {
     if (
       state.trips !== prev.trips ||
       state.places !== prev.places ||
+      state.routes !== prev.routes ||
       state.categoryOrder !== prev.categoryOrder ||
       state.categoryLabels !== prev.categoryLabels ||
       state.categoryStyles !== prev.categoryStyles

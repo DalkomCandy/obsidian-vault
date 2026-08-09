@@ -9,7 +9,7 @@ import { SearchBox } from './SearchBox'
 import type { SearchResult } from './SearchBox'
 import { QuickAddMarker, type DraftLocation } from './QuickAddMarker'
 import { RouteModePicker, type RouteOption } from './RouteModePicker'
-import { RouteLine, type ActiveRoute } from './RouteLine'
+import { RouteLine } from './RouteLine'
 
 interface MapViewProps {
   places: Place[]
@@ -45,16 +45,24 @@ export function MapView({
   onRouteCommitted,
 }: MapViewProps) {
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
+  const routes = usePlaceStore((s) => s.routes)
+  const saveRoute = usePlaceStore((s) => s.saveRoute)
+  const removeRoute = usePlaceStore((s) => s.removeRoute)
   const placesLib = useMapsLibrary('places')
 
   const [routeCandidate, setRouteCandidate] = useState<{ origin: Place; destination: Place } | null>(null)
-  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
 
   const clearRouteState = useCallback(() => {
     setRouteCandidate(null)
-    setActiveRoute(null)
     if (routeOriginId) onSetRouteOrigin(null)
   }, [routeOriginId, onSetRouteOrigin])
+
+  // A saved route only draws while both of its endpoints are on screen, so it
+  // follows the same region/trip/category filtering as the markers it links.
+  const visibleRoutes = useMemo(() => {
+    const visibleIds = new Set(places.map((p) => p.id))
+    return routes.filter((r) => visibleIds.has(r.originId) && visibleIds.has(r.destinationId))
+  }, [routes, places])
 
   // Only clicking an existing Google Maps POI icon opens the quick-add popup.
   // Clicking empty ground closes whatever popup/route state is open;
@@ -108,7 +116,6 @@ export function MapView({
               if (routeOriginId && place.id !== routeOriginId) {
                 const origin = places.find((p) => p.id === routeOriginId)
                 if (origin) {
-                  setActiveRoute(null)
                   setRouteCandidate({ origin, destination: place })
                   onSetRouteOrigin(null)
                 }
@@ -125,7 +132,6 @@ export function MapView({
             onRouteFrom={(p) => {
               onOpenPlaceChange(null)
               setRouteCandidate(null)
-              setActiveRoute(null)
               onSetRouteOrigin(p)
             }}
           />
@@ -175,14 +181,24 @@ export function MapView({
             origin={routeCandidate.origin}
             destination={routeCandidate.destination}
             onSelect={(mode, option) => {
-              setActiveRoute({ mode, path: option.path, durationText: option.durationText, distanceText: option.distanceText })
+              saveRoute({
+                tripId: routeCandidate.origin.tripId,
+                originId: routeCandidate.origin.id,
+                destinationId: routeCandidate.destination.id,
+                mode,
+                path: option.path,
+                durationText: option.durationText,
+                distanceText: option.distanceText,
+              })
               onRouteCommitted(routeCandidate.origin.name, routeCandidate.destination.id, mode, option)
               setRouteCandidate(null)
             }}
             onCancel={() => setRouteCandidate(null)}
           />
         )}
-        {activeRoute && <RouteLine route={activeRoute} onClose={() => setActiveRoute(null)} />}
+        {visibleRoutes.map((route) => (
+          <RouteLine key={route.id} route={route} onDelete={() => removeRoute(route.id)} />
+        ))}
       </Map>
     </>
   )

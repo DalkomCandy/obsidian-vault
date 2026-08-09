@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Category, CategoryStyle, Place, Trip } from '../types'
+import type { Category, CategoryStyle, Place, SavedRoute, Trip } from '../types'
 import {
   DEFAULT_CATEGORY_LABELS,
   DEFAULT_CATEGORY_ORDER,
@@ -12,6 +12,7 @@ import {
 
 const TRIPS_KEY = 'travel-map.trips'
 const PLACES_KEY = 'travel-map.places'
+const ROUTES_KEY = 'travel-map.routes'
 const CATEGORIES_KEY = 'travel-map.categories'
 const ICON_SCALE_KEY = 'travel-map.iconScale'
 const DEFAULT_ICON_SCALE = 1
@@ -166,6 +167,20 @@ function persistCategories(state: CategoriesState) {
   localStorage.setItem(CATEGORIES_KEY, JSON.stringify(state))
 }
 
+function persistRoutes(routes: SavedRoute[]) {
+  localStorage.setItem(ROUTES_KEY, JSON.stringify(routes))
+}
+
+function loadRoutes(): SavedRoute[] {
+  try {
+    const raw = localStorage.getItem(ROUTES_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? (parsed as SavedRoute[]) : []
+  } catch {
+    return []
+  }
+}
+
 function loadIconScale(): number {
   const stored = Number(localStorage.getItem(ICON_SCALE_KEY))
   return Number.isFinite(stored) && stored > 0 ? stored : DEFAULT_ICON_SCALE
@@ -179,6 +194,7 @@ function loadFadedOpacity(): number {
 interface PlaceStore {
   trips: Trip[]
   places: Place[]
+  routes: SavedRoute[]
   categoryOrder: Category[]
   categoryLabels: Record<Category, string>
   categoryStyles: Record<Category, CategoryStyle>
@@ -197,6 +213,8 @@ interface PlaceStore {
   removePlace: (id: string) => void
   movePlace: (draggedId: string, targetId: string) => void
   setPlaceCategory: (id: string, category: Category) => void
+  saveRoute: (route: Omit<SavedRoute, 'id' | 'createdAt'>) => void
+  removeRoute: (id: string) => void
   setSelectedRegion: (region: string | null) => void
   setSelectedTripId: (tripId: string | null) => void
   toggleCategoryFilter: (category: Category) => void
@@ -211,6 +229,7 @@ interface PlaceStore {
   hydrate: (data: {
     trips: Trip[]
     places: Place[]
+    routes: SavedRoute[]
     categoryOrder: Category[]
     categoryLabels: Record<Category, string>
     categoryStyles: Record<Category, CategoryStyle>
@@ -224,6 +243,7 @@ persistCategories(initialCategories)
 export const usePlaceStore = create<PlaceStore>((set, get) => ({
   trips: initial.trips,
   places: initial.places,
+  routes: loadRoutes(),
   categoryOrder: initialCategories.order,
   categoryLabels: initialCategories.labels,
   categoryStyles: initialCategories.styles,
@@ -257,13 +277,16 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   removeTrip: (id) => {
     const trips = get().trips.filter((t) => t.id !== id)
     const places = get().places.filter((p) => p.tripId !== id)
+    const routes = get().routes.filter((r) => r.tripId !== id)
     set({
       trips,
       places,
+      routes,
       selectedTripId: get().selectedTripId === id ? null : get().selectedTripId,
     })
     persistTrips(trips)
     persistPlaces(places)
+    persistRoutes(routes)
   },
 
   addPlace: (place) => {
@@ -285,8 +308,11 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
 
   removePlace: (id) => {
     const places = get().places.filter((p) => p.id !== id)
-    set({ places })
+    // A saved route is only meaningful while both of its endpoints exist.
+    const routes = get().routes.filter((r) => r.originId !== id && r.destinationId !== id)
+    set({ places, routes })
     persistPlaces(places)
+    persistRoutes(routes)
   },
 
   movePlace: (draggedId, targetId) => {
@@ -309,6 +335,23 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     const places = get().places.map((p) => (p.id === id ? { ...p, category } : p))
     set({ places })
     persistPlaces(places)
+  },
+
+  saveRoute: (route) => {
+    // Re-picking a mode for the same pair replaces the old line rather than
+    // stacking a second one on top of it.
+    const routes = [
+      ...get().routes.filter((r) => !(r.originId === route.originId && r.destinationId === route.destinationId)),
+      { ...route, id: crypto.randomUUID(), createdAt: new Date().toISOString() },
+    ]
+    set({ routes })
+    persistRoutes(routes)
+  },
+
+  removeRoute: (id) => {
+    const routes = get().routes.filter((r) => r.id !== id)
+    set({ routes })
+    persistRoutes(routes)
   },
 
   setSelectedRegion: (region) => set({ selectedRegion: region, selectedTripId: null }),
@@ -392,10 +435,11 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   // unlike a raw setState which would only update memory -- leaving
   // localStorage holding the pre-merge data until some unrelated action
   // happened to persist over it.
-  hydrate: ({ trips, places, categoryOrder, categoryLabels, categoryStyles }) => {
-    set({ trips, places, categoryOrder, categoryLabels, categoryStyles })
+  hydrate: ({ trips, places, routes, categoryOrder, categoryLabels, categoryStyles }) => {
+    set({ trips, places, routes, categoryOrder, categoryLabels, categoryStyles })
     persistTrips(trips)
     persistPlaces(places)
+    persistRoutes(routes)
     persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
   },
 }))

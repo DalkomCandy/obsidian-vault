@@ -1,35 +1,24 @@
 import { AdvancedMarker, Polyline } from '@vis.gl/react-google-maps'
-import type { TravelMode } from '../types'
-import { TRAVEL_MODE_EMOJI } from '../types'
-
-export interface ActiveRoute {
-  mode: TravelMode
-  path: google.maps.LatLngLiteral[]
-  durationText: string
-  distanceText: string
-}
-
-const MODE_COLOR: Record<TravelMode, string> = {
-  WALKING: '#16a34a',
-  DRIVING: '#2563eb',
-  TRANSIT: '#dc2626',
-}
+import type { SavedRoute } from '../types'
+import { TRAVEL_MODE_COLOR, TRAVEL_MODE_EMOJI } from '../types'
 
 interface RouteLineProps {
-  route: ActiveRoute
-  onClose: () => void
+  route: SavedRoute
+  onDelete: () => void
 }
 
-export function RouteLine({ route, onClose }: RouteLineProps) {
+export function RouteLine({ route, onDelete }: RouteLineProps) {
   const midpoint = route.path[Math.floor(route.path.length / 2)]
+  const color = TRAVEL_MODE_COLOR[route.mode]
 
   return (
     <>
-      <Polyline path={route.path} strokeColor={MODE_COLOR[route.mode]} strokeOpacity={0.85} strokeWeight={4} />
+      <Polyline path={route.path} strokeColor={color} strokeOpacity={0.85} strokeWeight={4} />
       {midpoint && (
-        <AdvancedMarker position={midpoint} onClick={onClose} title="클릭하면 경로가 지워져요">
-          <div className="route-duration-label" style={{ borderColor: MODE_COLOR[route.mode] }}>
+        <AdvancedMarker position={midpoint} onClick={onDelete} title="클릭하면 저장된 경로가 삭제돼요">
+          <div className="route-duration-label" style={{ borderColor: color }}>
             {TRAVEL_MODE_EMOJI[route.mode]} {route.durationText}
+            <span className="route-duration-remove">×</span>
           </div>
         </AdvancedMarker>
       )}

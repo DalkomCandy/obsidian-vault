@@ -79,7 +79,7 @@ export function PlaceMarker({
               <button onClick={() => onRouteFrom(place)}>경로</button>
               <button onClick={() => onEditPlace(place)}>수정</button>
               <button onClick={handleAiSummarize} disabled={aiLoading}>
-                {aiLoading ? '🤖 정리 중…' : '🤖 AI 정리'}
+                {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}
               </button>
               <button
                 className="danger"

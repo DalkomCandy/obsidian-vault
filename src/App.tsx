@@ -15,6 +15,15 @@ import './App.css'
 const NEEDS_TRIP_HINT = '먼저 지역과 여행(날짜)을 선택하거나 만들어주세요'
 const NEEDS_CATEGORY_HINT = '먼저 사이드바에서 카테고리를 만들어주세요'
 
+// Google hands back the same coordinates for the same POI every time, so a
+// tight epsilon (~11m) is enough to recognize "this is the one I already
+// saved" without ever colliding with a genuinely different neighbour.
+const SAME_PLACE_EPSILON = 0.0001
+
+function isSameSpot(a: { lat: number; lng: number }, b: { lat: number; lng: number }): boolean {
+  return Math.abs(a.lat - b.lat) < SAME_PLACE_EPSILON && Math.abs(a.lng - b.lng) < SAME_PLACE_EPSILON
+}
+
 const SIDEBAR_WIDTH_KEY = 'travel-map.sidebarWidth'
 const MIN_SIDEBAR_WIDTH = 240
 const MAX_SIDEBAR_WIDTH = 520
@@ -137,6 +146,28 @@ function App() {
       showHint(NEEDS_CATEGORY_HINT)
       return
     }
+
+    // Clicking the Google POI icon for somewhere already saved in this trip
+    // should surface what's saved, not offer to save a second copy of it.
+    const alreadySaved = places.find((p) => p.tripId === selectedTripId && isSameSpot(p, result))
+    if (alreadySaved) {
+      setDraftLocation(null)
+      setFocusPlace({ ...alreadySaved })
+      setOpenPlaceId(alreadySaved.id)
+      if (!sidebarPlaces.some((p) => p.id === alreadySaved.id)) {
+        showHint('이미 저장된 장소예요 (카테고리 필터에 가려져 있어요)')
+      }
+      return
+    }
+
+    // Saved under a different trip is a legitimate new entry for this one --
+    // just say so, so it doesn't feel like an accidental duplicate.
+    const savedElsewhere = places.find((p) => isSameSpot(p, result))
+    if (savedElsewhere) {
+      const trip = tripById.get(savedElsewhere.tripId)
+      showHint(trip ? `"${trip.name}"에도 저장된 장소예요` : '다른 여행에도 저장된 장소예요')
+    }
+
     setOpenPlaceId(null)
     setDraftLocation({ lat: result.lat, lng: result.lng, name: result.name, address: result.address })
   }

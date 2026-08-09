@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef, useMapsLibrary } from '@vis.gl/react-google-maps'
 import type { Place, TravelMode } from '../types'
-import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS } from '../types'
+import { TRAVEL_MODE_EMOJI, TRAVEL_MODE_LABELS, googleMapsDirectionsUrl } from '../types'
 
 export interface RouteOption {
   path: google.maps.LatLngLiteral[]
@@ -88,18 +88,38 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
                 {MODES.map((mode) => {
                   const option = options[mode]
                   const failed = !option || option === 'unavailable' || option === 'denied'
-                  const label = !option || option === 'unavailable' ? '정보 없음' : option === 'denied' ? 'API 설정 필요' : option.durationText
+
+                  // Google's own app covers legs the Directions API won't
+                  // answer for (transit in Japan, most notably), so a dead
+                  // row becomes a hand-off instead of a dead end.
+                  if (failed) {
+                    return (
+                      <a
+                        key={mode}
+                        className="route-picker-option route-picker-option-link"
+                        href={googleMapsDirectionsUrl(origin, destination, mode)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span className="route-picker-emoji">{TRAVEL_MODE_EMOJI[mode]}</span>
+                        <span className="route-picker-label">{TRAVEL_MODE_LABELS[mode]}</span>
+                        <span className="route-picker-duration">
+                          {option === 'denied' ? 'API 설정 필요' : 'Google 지도 ↗'}
+                        </span>
+                      </a>
+                    )
+                  }
+
                   return (
                     <button
                       key={mode}
                       type="button"
                       className="route-picker-option"
-                      disabled={failed}
-                      onClick={() => !failed && onSelect(mode, option)}
+                      onClick={() => onSelect(mode, option)}
                     >
                       <span className="route-picker-emoji">{TRAVEL_MODE_EMOJI[mode]}</span>
                       <span className="route-picker-label">{TRAVEL_MODE_LABELS[mode]}</span>
-                      <span className="route-picker-duration">{label}</span>
+                      <span className="route-picker-duration">{option.durationText}</span>
                     </button>
                   )
                 })}

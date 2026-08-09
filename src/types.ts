@@ -128,6 +128,44 @@ export const TRAVEL_MODE_EMOJI: Record<TravelMode, string> = {
   TRANSIT: '🚌',
 }
 
+export const TRAVEL_MODE_COLOR: Record<TravelMode, string> = {
+  WALKING: '#16a34a',
+  DRIVING: '#2563eb',
+  TRANSIT: '#dc2626',
+}
+
+/** A route the user chose to keep, drawn on the map until they delete it. */
+export interface SavedRoute {
+  id: string
+  tripId: string
+  originId: string
+  destinationId: string
+  mode: TravelMode
+  path: { lat: number; lng: number }[]
+  durationText: string
+  distanceText: string
+  createdAt: string
+}
+
+/**
+ * Opens the given trip leg in Google Maps proper. Used as the fallback when
+ * the Directions API can't answer -- most notably transit in Japan, which
+ * the consumer app covers but the API does not.
+ */
+export function googleMapsDirectionsUrl(
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number },
+  mode: TravelMode,
+): string {
+  const params = new URLSearchParams({
+    api: '1',
+    origin: `${origin.lat},${origin.lng}`,
+    destination: `${destination.lat},${destination.lng}`,
+    travelmode: mode.toLowerCase(),
+  })
+  return `https://www.google.com/maps/dir/?${params.toString()}`
+}
+
 export function formatTripLabel(dateStr: string): string {
   const [y, m, d] = dateStr.split('-')
   if (!y || !m || !d) return dateStr

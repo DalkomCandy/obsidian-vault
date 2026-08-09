@@ -832,6 +832,13 @@
   white-space: pre-wrap;
 }
 
+.popup-ai-error {
+  color: #dc2626;
+  font-size: 10.5px;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
 .popup-actions {
   display: flex;
   flex-wrap: wrap;
@@ -858,6 +865,11 @@
   background: #2563eb;
   border-color: #2563eb;
   color: #ffffff;
+}
+
+.popup-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .region-row {

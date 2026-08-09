@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
+import { applySummaryToMemo, matchCategoryId, summarizePlace } from '../lib/ollama'
 
 interface PlaceMarkerProps {
   place: Place
@@ -24,10 +26,30 @@ export function PlaceMarker({
 }: PlaceMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
   const removePlace = usePlaceStore((s) => s.removePlace)
+  const updatePlace = usePlaceStore((s) => s.updatePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const style = usePlaceStore((s) => s.categoryStyles[place.category])
   const iconScale = usePlaceStore((s) => s.iconScale)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  const handleAiSummarize = async () => {
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const summary = await summarizePlace(place.name, place.memo || undefined, Object.values(categoryLabels))
+      const matchedCategory = matchCategoryId(summary.category, categoryLabels)
+      updatePlace(place.id, {
+        memo: applySummaryToMemo(place.memo, summary),
+        ...(matchedCategory ? { category: matchedCategory } : {}),
+      })
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   return (
     <>
@@ -43,9 +65,13 @@ export function PlaceMarker({
               {trip && ` · ${trip.region} · ${trip.name}`}
             </div>
             {place.memo && <div className="popup-memo">{place.memo}</div>}
+            {aiError && <div className="popup-ai-error">{aiError}</div>}
             <div className="popup-actions">
               <button onClick={() => onRouteFrom(place)}>경로</button>
               <button onClick={() => onEditPlace(place)}>수정</button>
+              <button onClick={handleAiSummarize} disabled={aiLoading}>
+                {aiLoading ? '🤖 정리 중…' : '🤖 AI 정리'}
+              </button>
               <button
                 className="danger"
                 onClick={() => {

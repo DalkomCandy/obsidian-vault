@@ -985,6 +985,103 @@
   }
 }
 
+/* ---------- Day / itinerary planning ---------- */
+
+.group-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 20px 8px;
+}
+
+.group-mode-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.group-mode-toggle button {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  padding: 4px 11px;
+}
+
+.group-mode-toggle button.active {
+  background: var(--accent, #2563eb);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.day-count-control {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.day-count-control button {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 4px;
+  width: 20px;
+  height: 20px;
+  line-height: 1;
+  font-size: 12px;
+  padding: 0;
+}
+
+.day-count-control button:disabled {
+  opacity: 0.4;
+}
+
+.day-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  padding: 2px 6px;
+}
+
+.day-title.unscheduled {
+  color: var(--text-muted);
+}
+
+.day-empty {
+  margin: 0 0 4px;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* Compact day picker sitting inside each place row. */
+.place-day-select {
+  flex-shrink: 0;
+  width: 34px;
+  font: inherit;
+  font-size: 11px;
+  padding: 1px 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: var(--chip-bg);
+  color: var(--text);
+  text-align: center;
+}
+
+.place-day-select.unset {
+  color: var(--text-muted);
+  background: none;
+}
+
+.place-item:hover .place-day-select {
+  border-color: var(--border);
+}
+
 .ai-status {
   display: flex;
   flex-direction: column;

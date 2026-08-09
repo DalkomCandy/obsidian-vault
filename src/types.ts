@@ -26,6 +26,8 @@ export interface Trip {
   date: string // 'YYYY-MM-DD'
   name: string
   createdAt: string
+  /** How many days this trip is planned over. Absent on older data. */
+  dayCount?: number
 }
 
 export interface Place {
@@ -37,6 +39,20 @@ export interface Place {
   category: Category
   memo: string
   createdAt: string
+  /** 1-based day within the trip. Absent means "not scheduled yet". */
+  day?: number
+}
+
+export const DEFAULT_DAY_COUNT = 3
+export const MAX_DAY_COUNT = 30
+
+export function tripDayCount(trip: Trip | undefined): number {
+  const count = trip?.dayCount
+  return Number.isFinite(count) && (count as number) >= 1 ? (count as number) : DEFAULT_DAY_COUNT
+}
+
+export function dayLabel(day: number): string {
+  return `${day}일차`
 }
 
 export interface CategoryStyle {

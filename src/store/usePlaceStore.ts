@@ -6,6 +6,7 @@ import {
   DEFAULT_CATEGORY_STYLES,
   FALLBACK_CATEGORY_LABEL,
   FALLBACK_CATEGORY_STYLE,
+  MAX_DAY_COUNT,
   formatTripLabel,
   todayDateString,
 } from '../types'
@@ -220,8 +221,10 @@ interface PlaceStore {
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
-  movePlace: (draggedId: string, targetId: string) => void
+  movePlace: (draggedId: string, targetId: string, align?: 'category' | 'day') => void
   setPlaceCategory: (id: string, category: Category) => void
+  setPlaceDay: (id: string, day: number | undefined) => void
+  setTripDayCount: (tripId: string, dayCount: number) => void
   saveRoute: (route: Omit<SavedRoute, 'id' | 'createdAt'>) => void
   removeRoute: (id: string) => void
   setSelectedRegion: (region: string | null) => void
@@ -324,7 +327,9 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     persistRoutes(routes)
   },
 
-  movePlace: (draggedId, targetId) => {
+  // Reordering also adopts whatever the drop target is grouped by, so a row
+  // dragged across group boundaries lands in the group it was dropped into.
+  movePlace: (draggedId, targetId, align = 'category') => {
     if (draggedId === targetId) return
     const current = get().places
     const draggedIndex = current.findIndex((p) => p.id === draggedId)
@@ -332,8 +337,15 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     if (draggedIndex === -1 || !target) return
 
     const places = [...current]
-    const [dragged] = places.splice(draggedIndex, 1)
-    if (dragged.category !== target.category) dragged.category = target.category
+    const [original] = places.splice(draggedIndex, 1)
+    const dragged = { ...original }
+    if (align === 'category') {
+      dragged.category = target.category
+    } else if (target.day === undefined) {
+      delete dragged.day
+    } else {
+      dragged.day = target.day
+    }
     const newTargetIndex = places.findIndex((p) => p.id === targetId)
     places.splice(newTargetIndex, 0, dragged)
     set({ places })
@@ -343,6 +355,34 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setPlaceCategory: (id, category) => {
     const places = get().places.map((p) => (p.id === id ? { ...p, category } : p))
     set({ places })
+    persistPlaces(places)
+  },
+
+  setPlaceDay: (id, day) => {
+    const places = get().places.map((p) => {
+      if (p.id !== id) return p
+      const next = { ...p }
+      if (day === undefined) delete next.day
+      else next.day = day
+      return next
+    })
+    set({ places })
+    persistPlaces(places)
+  },
+
+  setTripDayCount: (tripId, dayCount) => {
+    const clamped = Math.min(MAX_DAY_COUNT, Math.max(1, Math.round(dayCount)))
+    const trips = get().trips.map((t) => (t.id === tripId ? { ...t, dayCount: clamped } : t))
+    // Shrinking the trip would strand places on days that no longer exist, so
+    // send those back to the unscheduled pool rather than hiding them.
+    const places = get().places.map((p) => {
+      if (p.tripId !== tripId || p.day === undefined || p.day <= clamped) return p
+      const next = { ...p }
+      delete next.day
+      return next
+    })
+    set({ trips, places })
+    persistTrips(trips)
     persistPlaces(places)
   },
 

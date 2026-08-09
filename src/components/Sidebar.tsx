@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Category, Place } from '../types'
-import { NEW_CATEGORY_STYLE } from '../types'
+import { MAX_DAY_COUNT, NEW_CATEGORY_STYLE, dayLabel, tripDayCount } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { TripPicker } from './TripPicker'
 import { SettingsMenu } from './SettingsMenu'
@@ -12,6 +12,14 @@ interface SidebarProps {
   onEditPlace: (place: Place) => void
   onFocusPlace: (place: Place) => void
   width: number
+}
+
+type GroupMode = 'category' | 'day'
+
+const GROUP_MODE_KEY = 'travel-map.groupMode'
+
+function loadGroupMode(): GroupMode {
+  return localStorage.getItem(GROUP_MODE_KEY) === 'day' ? 'day' : 'category'
 }
 
 function nextEmptyCategoryName(existingLabels: string[]): string {
@@ -26,6 +34,8 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const removePlace = usePlaceStore((s) => s.removePlace)
   const movePlace = usePlaceStore((s) => s.movePlace)
   const setPlaceCategory = usePlaceStore((s) => s.setPlaceCategory)
+  const setPlaceDay = usePlaceStore((s) => s.setPlaceDay)
+  const setTripDayCount = usePlaceStore((s) => s.setTripDayCount)
   const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
   const trips = usePlaceStore((s) => s.trips)
@@ -52,6 +62,12 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const [addingRegion, setAddingRegion] = useState(false)
   const [regionDraft, setRegionDraft] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState<Set<Category>>(new Set())
+  const [groupMode, setGroupModeState] = useState<GroupMode>(loadGroupMode)
+
+  const setGroupMode = (mode: GroupMode) => {
+    localStorage.setItem(GROUP_MODE_KEY, mode)
+    setGroupModeState(mode)
+  }
 
   const toggleCollapsed = (category: Category) => {
     setCollapsedCategories((prev) => {
@@ -85,6 +101,27 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
     // created category needs to stay visible so it can be renamed/styled.
     return categoryOrder.map((c) => [c, map.get(c) ?? []] as const)
   }, [places, categoryOrder])
+
+  const selectedTrip = selectedTripId ? tripById.get(selectedTripId) : undefined
+  const dayCount = tripDayCount(selectedTrip)
+
+  // Every day gets a section even when empty -- an empty day still needs to
+  // be a drop target, and seeing the gaps is the point of the itinerary view.
+  const groupedByDay = useMemo(() => {
+    const map = new Map<number, Place[]>()
+    const unscheduled: Place[] = []
+    for (const place of places) {
+      if (place.day === undefined || place.day > dayCount) {
+        unscheduled.push(place)
+        continue
+      }
+      const list = map.get(place.day) ?? []
+      list.push(place)
+      map.set(place.day, list)
+    }
+    const days = Array.from({ length: dayCount }, (_, i) => i + 1)
+    return { days: days.map((d) => [d, map.get(d) ?? []] as const), unscheduled }
+  }, [places, dayCount])
 
   const groupedByTrip = useMemo(() => {
     const map = new Map<string, Place[]>()
@@ -148,7 +185,7 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
         e.preventDefault()
         e.stopPropagation()
         const draggedFromTransfer = e.dataTransfer.getData('text/plain')
-        if (draggedFromTransfer) movePlace(draggedFromTransfer, place.id)
+        if (draggedFromTransfer) movePlace(draggedFromTransfer, place.id, groupMode)
         setDraggedId(null)
       }}
     >
@@ -156,6 +193,21 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
       <button className="place-main" onClick={() => onFocusPlace(place)}>
         <span className="place-name">{place.name}</span>
       </button>
+      {selectedTripId && (
+        <select
+          className={place.day === undefined ? 'place-day-select unset' : 'place-day-select'}
+          value={place.day ?? ''}
+          title="일차 배정"
+          onChange={(e) => setPlaceDay(place.id, e.target.value ? Number(e.target.value) : undefined)}
+        >
+          <option value="">–</option>
+          {Array.from({ length: dayCount }, (_, i) => i + 1).map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      )}
       <div className="place-controls">
         <button title="수정" onClick={() => onEditPlace(place)}>
           ✎
@@ -170,6 +222,30 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
         </button>
       </div>
     </li>
+  )
+
+  const renderDaySection = (key: string, title: string, list: Place[], day: number | undefined) => (
+    <div
+      className="region-group"
+      key={key}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault()
+        const draggedFromTransfer = e.dataTransfer.getData('text/plain')
+        if (draggedFromTransfer) setPlaceDay(draggedFromTransfer, day)
+        setDraggedId(null)
+      }}
+    >
+      <div className="region-title static">
+        <span className={day === undefined ? 'day-title unscheduled' : 'day-title'}>{title}</span>
+        <span className="region-count">{list.length}개</span>
+      </div>
+      {list.length === 0 ? (
+        <p className="day-empty">여기로 장소를 끌어다 놓으세요</p>
+      ) : (
+        <ul>{list.map(renderPlaceRow)}</ul>
+      )}
+    </div>
   )
 
   return (
@@ -240,6 +316,46 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
       />
 
       {selectedTripId && (
+        <div className="group-mode-row">
+          <div className="group-mode-toggle">
+            <button
+              type="button"
+              className={groupMode === 'category' ? 'active' : undefined}
+              onClick={() => setGroupMode('category')}
+            >
+              카테고리별
+            </button>
+            <button
+              type="button"
+              className={groupMode === 'day' ? 'active' : undefined}
+              onClick={() => setGroupMode('day')}
+            >
+              일차별
+            </button>
+          </div>
+          {groupMode === 'day' && selectedTrip && (
+            <div className="day-count-control" title="여행 일수">
+              <button
+                type="button"
+                disabled={dayCount <= 1}
+                onClick={() => setTripDayCount(selectedTrip.id, dayCount - 1)}
+              >
+                −
+              </button>
+              <span>{dayCount}일</span>
+              <button
+                type="button"
+                disabled={dayCount >= MAX_DAY_COUNT}
+                onClick={() => setTripDayCount(selectedTrip.id, dayCount + 1)}
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedTripId && groupMode === 'category' && (
         <div className="add-category-row">
           <button type="button" className="add-category-btn" onClick={handleAddCategory}>
             + 카테고리 추가
@@ -259,6 +375,15 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
         )}
 
         {selectedTripId &&
+          groupMode === 'day' && (
+            <>
+              {groupedByDay.days.map(([day, list]) => renderDaySection(`day-${day}`, dayLabel(day), list, day))}
+              {renderDaySection('day-none', '미배정', groupedByDay.unscheduled, undefined)}
+            </>
+          )}
+
+        {selectedTripId &&
+          groupMode === 'category' &&
           groupedByCategory.map(([category, list]) => (
             <div
               className="region-group"

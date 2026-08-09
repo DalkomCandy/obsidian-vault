@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Category } from '../types'
+import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 
 interface CategoryFilterProps {
@@ -25,16 +26,17 @@ export function CategoryFilter({ selected, onToggle, onSetAll }: CategoryFilterP
       <div className="category-filter-chips">
         {categoryOrder.map((category) => {
           const active = selected.includes(category)
+          const style = categoryStyles[category] ?? FALLBACK_CATEGORY_STYLE
           return (
             <button
               key={category}
               type="button"
               className={active ? 'category-chip active' : 'category-chip'}
-              style={{ '--chip-color': categoryStyles[category].color } as CSSProperties}
+              style={{ '--chip-color': style.color } as CSSProperties}
               onClick={() => onToggle(category)}
             >
               <span className="dot" />
-              {categoryLabels[category]}
+              {categoryLabels[category] ?? FALLBACK_CATEGORY_LABEL}
             </button>
           )
         })}

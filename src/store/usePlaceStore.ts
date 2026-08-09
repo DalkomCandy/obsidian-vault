@@ -4,6 +4,8 @@ import {
   DEFAULT_CATEGORY_LABELS,
   DEFAULT_CATEGORY_ORDER,
   DEFAULT_CATEGORY_STYLES,
+  FALLBACK_CATEGORY_LABEL,
+  FALLBACK_CATEGORY_STYLE,
   formatTripLabel,
   todayDateString,
 } from '../types'
@@ -13,6 +15,8 @@ const PLACES_KEY = 'travel-map.places'
 const CATEGORIES_KEY = 'travel-map.categories'
 const ICON_SCALE_KEY = 'travel-map.iconScale'
 const DEFAULT_ICON_SCALE = 1
+const FADED_OPACITY_KEY = 'travel-map.fadedOpacity'
+const DEFAULT_FADED_OPACITY = 0.38
 
 interface LegacyPlace {
   id: string
@@ -105,20 +109,48 @@ function loadTripsAndPlaces(): { trips: Trip[]; places: Place[] } {
   }
 }
 
-function loadCategories(): CategoriesState {
+// Guarantees every category id referenced by `order` or by a place has a
+// matching label and style, filling in a fallback for anything missing
+// (e.g. data left behind by a category that was deleted on another device,
+// or corrupted localStorage). Without this, any code that indexes
+// `categoryStyles[place.category]`/`categoryLabels[place.category]`
+// unguarded can crash the whole app.
+function sanitizeCategories(state: CategoriesState, places: Place[]): CategoriesState {
+  const order = [...state.order]
+  const labels = { ...state.labels }
+  const styles = { ...state.styles }
+  const known = new Set([...order, ...Object.keys(labels), ...Object.keys(styles), ...places.map((p) => p.category)])
+  for (const category of known) {
+    if (!order.includes(category)) order.push(category)
+    if (!(category in labels)) labels[category] = FALLBACK_CATEGORY_LABEL
+    if (!(category in styles)) styles[category] = FALLBACK_CATEGORY_STYLE
+  }
+  return { order, labels, styles }
+}
+
+function loadCategories(places: Place[]): CategoriesState {
   try {
     const raw = localStorage.getItem(CATEGORIES_KEY)
     if (!raw) {
-      return { order: [...DEFAULT_CATEGORY_ORDER], labels: { ...DEFAULT_CATEGORY_LABELS }, styles: { ...DEFAULT_CATEGORY_STYLES } }
+      return sanitizeCategories(
+        { order: [...DEFAULT_CATEGORY_ORDER], labels: { ...DEFAULT_CATEGORY_LABELS }, styles: { ...DEFAULT_CATEGORY_STYLES } },
+        places,
+      )
     }
     const parsed: Partial<CategoriesState> = JSON.parse(raw)
-    return {
-      order: parsed.order ?? [...DEFAULT_CATEGORY_ORDER],
-      labels: { ...DEFAULT_CATEGORY_LABELS, ...parsed.labels },
-      styles: { ...DEFAULT_CATEGORY_STYLES, ...parsed.styles },
-    }
+    return sanitizeCategories(
+      {
+        order: parsed.order ?? [...DEFAULT_CATEGORY_ORDER],
+        labels: { ...DEFAULT_CATEGORY_LABELS, ...parsed.labels },
+        styles: { ...DEFAULT_CATEGORY_STYLES, ...parsed.styles },
+      },
+      places,
+    )
   } catch {
-    return { order: [...DEFAULT_CATEGORY_ORDER], labels: { ...DEFAULT_CATEGORY_LABELS }, styles: { ...DEFAULT_CATEGORY_STYLES } }
+    return sanitizeCategories(
+      { order: [...DEFAULT_CATEGORY_ORDER], labels: { ...DEFAULT_CATEGORY_LABELS }, styles: { ...DEFAULT_CATEGORY_STYLES } },
+      places,
+    )
   }
 }
 
@@ -139,6 +171,11 @@ function loadIconScale(): number {
   return Number.isFinite(stored) && stored > 0 ? stored : DEFAULT_ICON_SCALE
 }
 
+function loadFadedOpacity(): number {
+  const stored = Number(localStorage.getItem(FADED_OPACITY_KEY))
+  return Number.isFinite(stored) && stored >= 0 && stored <= 1 ? stored : DEFAULT_FADED_OPACITY
+}
+
 interface PlaceStore {
   trips: Trip[]
   places: Place[]
@@ -150,6 +187,7 @@ interface PlaceStore {
   selectedCategories: Category[]
   activeAddCategory: Category | null
   iconScale: number
+  fadedOpacity: number
 
   addTrip: (region: string, name: string) => Trip
   renameTrip: (id: string, name: string) => void
@@ -169,6 +207,7 @@ interface PlaceStore {
   renameCategory: (category: Category, label: string) => void
   removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
+  setFadedOpacity: (opacity: number) => void
   hydrate: (data: {
     trips: Trip[]
     places: Place[]
@@ -179,7 +218,8 @@ interface PlaceStore {
 }
 
 const initial = loadTripsAndPlaces()
-const initialCategories = loadCategories()
+const initialCategories = loadCategories(initial.places)
+persistCategories(initialCategories)
 
 export const usePlaceStore = create<PlaceStore>((set, get) => ({
   trips: initial.trips,
@@ -192,6 +232,7 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   selectedCategories: [...initialCategories.order],
   activeAddCategory: null,
   iconScale: loadIconScale(),
+  fadedOpacity: loadFadedOpacity(),
 
   addTrip: (region, name) => {
     const trip: Trip = {
@@ -340,6 +381,11 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setIconScale: (scale) => {
     localStorage.setItem(ICON_SCALE_KEY, String(scale))
     set({ iconScale: scale })
+  },
+
+  setFadedOpacity: (opacity) => {
+    localStorage.setItem(FADED_OPACITY_KEY, String(opacity))
+    set({ fadedOpacity: opacity })
   },
 
   // Applies externally-sourced data (e.g. a Supabase merge) AND persists it,

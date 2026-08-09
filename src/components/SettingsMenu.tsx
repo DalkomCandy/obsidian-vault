@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from './ThemeToggle'
 import { IconSizeControl } from './IconSizeControl'
+import { FadedOpacityControl } from './FadedOpacityControl'
 
 export function SettingsMenu() {
   const [open, setOpen] = useState(false)
@@ -35,6 +36,9 @@ export function SettingsMenu() {
           </div>
           <div className="settings-menu-section">
             <IconSizeControl />
+          </div>
+          <div className="settings-menu-section">
+            <FadedOpacityControl />
           </div>
         </div>
       )}

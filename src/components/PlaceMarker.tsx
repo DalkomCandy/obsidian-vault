@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
+import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 import { applySummaryToMemo, matchCategoryId, summarizePlace } from '../lib/ollama'
@@ -29,8 +30,9 @@ export function PlaceMarker({
   const updatePlace = usePlaceStore((s) => s.updatePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
-  const style = usePlaceStore((s) => s.categoryStyles[place.category])
+  const style = usePlaceStore((s) => s.categoryStyles[place.category]) ?? FALLBACK_CATEGORY_STYLE
   const iconScale = usePlaceStore((s) => s.iconScale)
+  const fadedOpacity = usePlaceStore((s) => s.fadedOpacity)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
@@ -54,14 +56,21 @@ export function PlaceMarker({
   return (
     <>
       <AdvancedMarker ref={markerRef} position={{ lat: place.lat, lng: place.lng }} onClick={onMarkerClick}>
-        <PlacePin color={style.color} shape={style.shape} iconUrl={style.iconUrl} faded={faded} scale={iconScale} />
+        <PlacePin
+          color={style.color}
+          shape={style.shape}
+          iconUrl={style.iconUrl}
+          faded={faded}
+          scale={iconScale}
+          fadedOpacity={fadedOpacity}
+        />
       </AdvancedMarker>
       {isOpen && marker && (
         <InfoWindow anchor={marker} onCloseClick={() => onOpenChange(false)}>
           <div className="popup-content">
             <div className="popup-title">{place.name}</div>
             <div className="popup-meta">
-              {categoryLabels[place.category]}
+              {categoryLabels[place.category] ?? FALLBACK_CATEGORY_LABEL}
               {trip && ` · ${trip.region} · ${trip.name}`}
             </div>
             {place.memo && <div className="popup-memo">{place.memo}</div>}

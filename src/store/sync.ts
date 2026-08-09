@@ -1,6 +1,7 @@
 import { usePlaceStore } from './usePlaceStore'
 import { supabase, isSupabaseConfigured, APP_STATE_ROW_ID } from '../lib/supabase'
-import { DEFAULT_CATEGORY_LABELS, DEFAULT_CATEGORY_STYLES, type CategoryStyle } from '../types'
+import type { CategoryStyle } from '../types'
+import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
 
 interface SyncableState {
   trips: ReturnType<typeof usePlaceStore.getState>['trips']
@@ -82,8 +83,8 @@ function sanitizeCategoryMaps(
   const order = [...categoryOrder]
   for (const category of known) {
     if (!order.includes(category)) order.push(category)
-    if (!(category in labels)) labels[category] = DEFAULT_CATEGORY_LABELS[category] ?? category
-    if (!(category in styles)) styles[category] = DEFAULT_CATEGORY_STYLES[category] ?? DEFAULT_CATEGORY_STYLES.etc
+    if (!(category in labels)) labels[category] = FALLBACK_CATEGORY_LABEL
+    if (!(category in styles)) styles[category] = FALLBACK_CATEGORY_STYLE
   }
   return { categoryOrder: order, categoryLabels: labels, categoryStyles: styles }
 }

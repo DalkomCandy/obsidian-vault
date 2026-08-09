@@ -7,6 +7,7 @@ interface PlacePinProps {
   faded: boolean
   scale?: number
   iconUrl?: string
+  fadedOpacity?: number
 }
 
 /**
@@ -223,14 +224,14 @@ function ShapeSvg({ color, shape }: { color: string; shape: MarkerShape }) {
   }
 }
 
-export function PlacePin({ color, shape, faded, scale = 1, iconUrl }: PlacePinProps) {
+export function PlacePin({ color, shape, faded, scale = 1, iconUrl, fadedOpacity = 0.38 }: PlacePinProps) {
   const [iconFailed, setIconFailed] = useState(false)
   const showGoogleIcon = Boolean(iconUrl) && !iconFailed
 
   return (
     <div
       style={{
-        opacity: faded ? 0.38 : 1,
+        opacity: faded ? fadedOpacity : 1,
         cursor: 'pointer',
         transform: scale !== 1 ? `scale(${scale})` : undefined,
         transformOrigin: 'bottom center',

@@ -58,6 +58,13 @@ export const DEFAULT_CATEGORY_STYLES: Record<Category, CategoryStyle> = {}
 // it via the 🎨 picker or renames it away from "빈 카테고리".
 export const NEW_CATEGORY_STYLE: CategoryStyle = { color: '#2563eb', shape: 'circle' }
 
+// A place or category id should always resolve to a real label/style, but
+// stale local data or a cross-device sync can in principle reference a
+// category id that no longer has an entry. Render *something* instead of
+// crashing.
+export const FALLBACK_CATEGORY_STYLE: CategoryStyle = { color: '#525252', shape: 'pin' }
+export const FALLBACK_CATEGORY_LABEL = '알 수 없는 카테고리'
+
 export const MARKER_SHAPES: MarkerShape[] = [
   'pin',
   'star',

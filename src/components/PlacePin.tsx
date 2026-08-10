@@ -9,6 +9,8 @@ interface PlacePinProps {
   iconUrl?: string
   fadedOpacity?: number
   visitOrder?: number
+  /** Drawn under the pin when the label setting is on. */
+  label?: string
 }
 
 /**
@@ -233,6 +235,7 @@ export function PlacePin({
   iconUrl,
   fadedOpacity = 0.38,
   visitOrder,
+  label,
 }: PlacePinProps) {
   const [iconFailed, setIconFailed] = useState(false)
   const showGoogleIcon = Boolean(iconUrl) && !iconFailed
@@ -253,6 +256,7 @@ export function PlacePin({
         <ShapeSvg color={color} shape={shape} />
       )}
       {visitOrder !== undefined && <span className="pin-order-badge">{visitOrder}</span>}
+      {label && <span className="pin-label">{label}</span>}
     </div>
   )
 }

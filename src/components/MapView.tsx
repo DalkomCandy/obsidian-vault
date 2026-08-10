@@ -43,6 +43,8 @@ interface MapViewProps {
   mapPadding: MapPadding
   focusPlace: Place | null
   fitPlaces: Place[] | null
+  /** Changes only when the shown region/trip/day changes -- see MapController. */
+  fitContextKey: string
   draftLocation: DraftLocation | null
   defaultAddCategory: Category
   openPlaceId: string | null
@@ -64,6 +66,7 @@ export function MapView({
   mapPadding,
   focusPlace,
   fitPlaces,
+  fitContextKey,
   draftLocation,
   defaultAddCategory,
   openPlaceId,
@@ -132,6 +135,7 @@ export function MapView({
           rating: place.rating ?? undefined,
           userRatingCount: place.userRatingCount ?? undefined,
           googleMapsUri: place.googleMapsURI ?? undefined,
+          googlePlaceId: placeId,
         })
       } catch (err) {
         // Google's place lookup can fail for POIs it otherwise shows on the
@@ -143,7 +147,7 @@ export function MapView({
         const message = err instanceof Error ? err.message : String(err)
         console.error('Failed to fetch place details', err)
         reportPlaceLookupError(message)
-        onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
+        onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng, googlePlaceId: placeId })
       }
     },
     [onLocationPicked, placesLib, draftLocation, onCancelDraft, openPlaceId, onOpenPlaceChange, clearRouteState],
@@ -230,7 +234,12 @@ export function MapView({
         zoomControl={false}
         onClick={handleClick}
       >
-        <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} mapPadding={mapPadding} />
+        <MapController
+          focusPlace={focusPlace}
+          fitPlaces={fitPlaces}
+          fitContextKey={fitContextKey}
+          mapPadding={mapPadding}
+        />
         {markers}
         {draftLocation && (
           <QuickAddMarker

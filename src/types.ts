@@ -50,6 +50,9 @@ export interface Place {
   /** Overrides the category's marker style for this place alone. Absent
    * means "use the category's style", same as every other place in it. */
   style?: CategoryStyle
+  /** Google's own id for this spot, when it came from a POI click or search.
+   * Absent for KML imports and hand-placed pins, which have no listing. */
+  googlePlaceId?: string
 }
 
 /** Valid 'HH:MM' in 24-hour form, or empty for "clear the time". */
@@ -217,13 +220,31 @@ export function formatDistance(totalMeters: number): string {
  */
 /**
  * Opens the place itself in Google Maps (not directions to it) -- for
- * looking the spot up, checking hours/reviews, or sharing it. Coordinates
- * always work here, unlike a name-based query which can match the wrong
- * branch of a chain; a saved place has no stored Google place id to link to
- * more precisely once it's been imported from KML or typed in by hand.
+ * checking hours, photos and reviews, or sharing it.
+ *
+ * With a stored Google place id this resolves to that exact listing, so the
+ * spot's actual info page opens. Without one (KML imports, hand-placed pins)
+ * it falls back to the coordinates, which drop an unnamed pin at the right
+ * spot -- deliberately not a name search, since that would happily match a
+ * different branch of the same chain on the other side of the city.
  */
-export function googleMapsViewUrl(place: { lat: number; lng: number }): string {
-  const params = new URLSearchParams({ api: '1', query: `${place.lat},${place.lng}` })
+export function googleMapsViewUrl(place: {
+  lat: number
+  lng: number
+  name?: string
+  googlePlaceId?: string
+}): string {
+  const coords = `${place.lat},${place.lng}`
+  if (!place.googlePlaceId) {
+    return `https://www.google.com/maps/search/?${new URLSearchParams({ api: '1', query: coords })}`
+  }
+  // query_place_id is only honoured alongside a query, so send the name when
+  // there is one -- the id is what actually decides which listing opens.
+  const params = new URLSearchParams({
+    api: '1',
+    query: place.name?.trim() || coords,
+    query_place_id: place.googlePlaceId,
+  })
   return `https://www.google.com/maps/search/?${params.toString()}`
 }
 

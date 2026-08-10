@@ -12,6 +12,7 @@ export interface DraftLocation {
   rating?: number
   userRatingCount?: number
   googleMapsUri?: string
+  googlePlaceId?: string
 }
 
 interface QuickAddMarkerProps {

@@ -161,6 +161,11 @@ function App() {
     return scoped.length ? scoped : null
   }, [selectedRegion, selectedTripId, sidebarPlaces, focusedDay])
 
+  // Switching region/trip/day means "show me that instead", so the map
+  // re-frames. Adding or removing a place within the view you're already
+  // looking at doesn't -- the camera stays exactly where you left it.
+  const fitContextKey = `${selectedRegion ?? ''}|${selectedTripId ?? ''}|${focusedDay ?? ''}`
+
   const showHint = (message: string) => {
     setHint(message)
     window.clearTimeout(hintTimer.current)
@@ -224,7 +229,10 @@ function App() {
     }
 
     setOpenPlaceId(null)
-    setDraftLocation({ lat: result.lat, lng: result.lng, name: result.name, address: result.address })
+    // Carries the whole result (rating, Google Maps URI, place id...) -- the
+    // popup renders those, and the id is what makes the saved place's link
+    // open its actual listing instead of a bare coordinate pin.
+    setDraftLocation({ ...result })
   }
 
   const handleSaveDraft = (category: Category) => {
@@ -241,6 +249,7 @@ function App() {
       lng: draftLocation.lng,
       category,
       memo,
+      ...(draftLocation.googlePlaceId ? { googlePlaceId: draftLocation.googlePlaceId } : {}),
       // While a day is focused, anything added is part of that day's plan.
       ...(focusedDay !== null ? { day: focusedDay } : {}),
     })
@@ -337,6 +346,7 @@ function App() {
             mapPadding={mapPadding}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
+            fitContextKey={fitContextKey}
             draftLocation={draftLocation}
             defaultAddCategory={activeAddCategory ?? categoryOrder[0]}
             openPlaceId={openPlaceId}

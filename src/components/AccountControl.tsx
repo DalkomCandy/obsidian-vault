@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
+import { clearLocalData } from '../store/sync'
 
 /**
  * Sign-in for the optional cross-device sync, living in the settings menu.
@@ -42,9 +43,31 @@ export function AccountControl() {
         <span className="settings-menu-label">기기 간 동기화</span>
         <p className="account-email">{session.user.email}</p>
         <p className="account-hint">이 계정으로 저장되고 있어요. 다른 기기에서 같은 계정으로 로그인하면 이어집니다.</p>
-        <button type="button" className="account-btn" disabled={busy} onClick={() => void signOut()}>
-          로그아웃
-        </button>
+        <div className="account-actions">
+          <button type="button" className="account-btn" disabled={busy} onClick={() => void signOut()}>
+            로그아웃
+          </button>
+          {/* Signing straight into another account would carry this one's
+              trips along (sync merges local into whatever it connects to),
+              so switching clears the local copy first. */}
+          <button
+            type="button"
+            className="account-btn"
+            disabled={busy}
+            onClick={() => {
+              const ok = confirm(
+                '다른 계정으로 전환할까요?\n\n' +
+                  `이 기기에 있는 데이터는 지워지고, 새로 로그인한 계정의 데이터를 받아옵니다. ` +
+                  `지금 계정(${session.user.email})의 데이터는 그대로 남아 있어서 다시 로그인하면 돌아와요.`,
+              )
+              if (!ok) return
+              clearLocalData()
+              void signOut()
+            }}
+          >
+            계정 전환
+          </button>
+        </div>
         {error && <p className="account-error">{error}</p>}
       </div>
     )

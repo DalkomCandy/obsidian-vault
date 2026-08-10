@@ -80,6 +80,26 @@ function scheduleSync() {
   syncTimer = setTimeout(pushNow, 800)
 }
 
+const LAST_USER_KEY = 'travel-map.lastSyncedUserId'
+
+/** Which account this device's local data last belonged to, if any. */
+function lastSyncedUserId(): string | null {
+  try {
+    return localStorage.getItem(LAST_USER_KEY)
+  } catch {
+    return null
+  }
+}
+
+function rememberSyncedUser(userId: string | null): void {
+  try {
+    if (userId) localStorage.setItem(LAST_USER_KEY, userId)
+    else localStorage.removeItem(LAST_USER_KEY)
+  } catch {
+    // A blocked localStorage only costs us the account-switch guard below.
+  }
+}
+
 /**
  * Point sync at a signed-in user (or at nobody on sign-out).
  *
@@ -92,6 +112,23 @@ export function setSyncUser(userId: string | null): void {
   clearTimeout(syncTimer)
   currentUserId = userId
   if (userId) void loadRemoteState()
+}
+
+/**
+ * Wipes this device's copy so the next sign-in starts from that account's
+ * data alone. Used when deliberately switching accounts -- see the guard in
+ * loadRemoteStateOnce for why leaving it in place would leak data across.
+ */
+export function clearLocalData(): void {
+  rememberSyncedUser(null)
+  usePlaceStore.getState().hydrate({
+    trips: [],
+    places: [],
+    routes: [],
+    categoryOrder: [],
+    categoryLabels: {},
+    categoryStyles: {},
+  })
 }
 
 /**
@@ -172,9 +209,37 @@ async function loadRemoteStateOnce(): Promise<void> {
       console.error('[supabase] 원격 데이터를 불러오지 못했어요.', error)
       return
     }
+    // Signing into a *different* account than the local data belongs to.
+    // The union-merge below assumes both sides are the same person's, so
+    // running it here would push the previous account's trips into this one.
+    // Take the new account's data as-is instead (and if it has none, start
+    // this account empty rather than donating the other one's).
+    const previousUserId = lastSyncedUserId()
+    const switchedAccounts = previousUserId !== null && previousUserId !== currentUserId
+    if (switchedAccounts) {
+      const remote = (data?.data ?? null) as Partial<SyncableState> | null
+      applyingRemote = true
+      usePlaceStore.getState().hydrate({
+        trips: remote?.trips ?? [],
+        places: remote?.places ?? [],
+        routes: remote?.routes ?? [],
+        ...sanitizeCategoryMaps(
+          remote?.categoryOrder ?? [],
+          remote?.categoryLabels ?? {},
+          remote?.categoryStyles ?? {},
+          remote?.places ?? [],
+        ),
+      })
+      applyingRemote = false
+      rememberSyncedUser(currentUserId)
+      setStatus({ state: 'ok', at: Date.now(), message: null })
+      return
+    }
+
     // No row yet -- first sign-in on a fresh account. Push this device's
     // local data up so the account starts out holding it.
     if (!data?.data) {
+      rememberSyncedUser(currentUserId)
       await pushNow()
       return
     }
@@ -215,6 +280,7 @@ async function loadRemoteStateOnce(): Promise<void> {
     applyingRemote = true
     usePlaceStore.getState().hydrate(merged)
     applyingRemote = false
+    rememberSyncedUser(currentUserId)
 
     // The merge may have pulled in local-only data the remote row didn't
     // have yet (e.g. this device connecting to Supabase for the first

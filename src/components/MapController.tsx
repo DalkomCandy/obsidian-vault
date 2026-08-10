@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useRef } from 'react'
 import { useMap } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
 
@@ -11,13 +11,19 @@ export interface MapPadding {
 interface MapControllerProps {
   focusPlace: Place | null
   fitPlaces: Place[] | null
+  /**
+   * Identifies *which view* is being shown (region/trip/day), not what's in
+   * it. Framing happens when this changes and at no other time -- see the
+   * effect below.
+   */
+  fitContextKey: string
   mapPadding: MapPadding
 }
 
 // Breathing room kept around fitted bounds even with no floating chrome in the way.
 const BASE_PADDING = 64
 
-export function MapController({ focusPlace, fitPlaces, mapPadding }: MapControllerProps) {
+export function MapController({ focusPlace, fitPlaces, fitContextKey, mapPadding }: MapControllerProps) {
   const map = useMap()
 
   useEffect(() => {
@@ -27,40 +33,34 @@ export function MapController({ focusPlace, fitPlaces, mapPadding }: MapControll
     recentreForPadding(map, mapPadding)
   }, [map, focusPlace, mapPadding])
 
-  // App.tsx recomputes the sidebarPlaces/fitPlaces array (a new reference)
-  // on every places change, including ones that don't touch which places are
-  // shown or where -- editing a memo, appending a route summary, an AI
-  // rewrite. Keying the effect on this instead of the array reference means
-  // it only re-fits when the actual visible set or its coordinates change,
-  // not every time unrelated place data is edited.
-  const fitKey = useMemo(
-    () => (fitPlaces ? fitPlaces.map((p) => `${p.id}:${p.lat}:${p.lng}`).join('|') : ''),
-    [fitPlaces],
-  )
+  // Read inside the fit effect without being a dependency of it: the camera
+  // should follow "which trip/day am I looking at", never "what's currently
+  // in it". Depending on the array (or on its contents) meant every add and
+  // delete re-framed the map out from under whatever you'd panned to.
+  const latest = useRef({ fitPlaces, mapPadding })
+  latest.current = { fitPlaces, mapPadding }
 
   useEffect(() => {
-    if (!map || !fitPlaces || fitPlaces.length === 0) return
-    if (fitPlaces.length === 1) {
-      map.panTo({ lat: fitPlaces[0].lat, lng: fitPlaces[0].lng })
+    const { fitPlaces: places, mapPadding: padding } = latest.current
+    if (!map || !places || places.length === 0) return
+    if (places.length === 1) {
+      map.panTo({ lat: places[0].lat, lng: places[0].lng })
       map.setZoom(14)
-      recentreForPadding(map, mapPadding)
+      recentreForPadding(map, padding)
       return
     }
     const bounds = new google.maps.LatLngBounds()
-    fitPlaces.forEach((place) => bounds.extend({ lat: place.lat, lng: place.lng }))
+    places.forEach((place) => bounds.extend({ lat: place.lat, lng: place.lng }))
     // fitBounds accepts per-side padding directly, so the floating top bars
     // and bottom sheet on mobile can be excluded from the "fit into" area
     // in one call instead of fitting to the full (partly obstructed) div.
     map.fitBounds(bounds, {
-      top: BASE_PADDING + mapPadding.top,
-      bottom: BASE_PADDING + mapPadding.bottom,
+      top: BASE_PADDING + padding.top,
+      bottom: BASE_PADDING + padding.bottom,
       left: BASE_PADDING,
       right: BASE_PADDING,
     })
-    // fitKey is the real dependency (see comment above); fitPlaces itself is
-    // read fresh inside the effect each time it does run.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, fitKey, mapPadding])
+  }, [map, fitContextKey])
 
   return null
 }

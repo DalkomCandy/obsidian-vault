@@ -20,6 +20,7 @@ const ICON_SCALE_KEY = 'travel-map.iconScale'
 const DEFAULT_ICON_SCALE = 1
 const FADED_OPACITY_KEY = 'travel-map.fadedOpacity'
 const DEFAULT_FADED_OPACITY = 0.38
+const SHOW_LABELS_KEY = 'travel-map.showPlaceLabels'
 const UNDO_DELETE_WINDOW_MS = 6000
 
 let undoDeleteTimer: ReturnType<typeof setTimeout> | undefined
@@ -204,6 +205,11 @@ function loadFadedOpacity(): number {
   return Number.isFinite(stored) && stored > 0 && stored <= 1 ? stored : DEFAULT_FADED_OPACITY
 }
 
+function loadShowPlaceLabels(): boolean {
+  // Off by default -- labels on a dense map are a deliberate opt-in.
+  return localStorage.getItem(SHOW_LABELS_KEY) === 'true'
+}
+
 /**
  * Every category defaults to visible; only an explicit toggle-off should
  * hide one. Deriving `selectedCategories` from `categoryOrder` minus this
@@ -236,6 +242,8 @@ interface PlaceStore {
   focusedDay: number | null
   iconScale: number
   fadedOpacity: number
+  /** Draw each marker's place name beneath its pin. */
+  showPlaceLabels: boolean
   /** The most recently soft-deleted place (and its routes), while its undo window is open. */
   lastDeleted: { place: Place; routes: SavedRoute[] } | null
 
@@ -275,6 +283,7 @@ interface PlaceStore {
   removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
   setFadedOpacity: (opacity: number) => void
+  setShowPlaceLabels: (show: boolean) => void
   hydrate: (data: {
     trips: Trip[]
     places: Place[]
@@ -304,6 +313,7 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   focusedDay: null,
   iconScale: loadIconScale(),
   fadedOpacity: loadFadedOpacity(),
+  showPlaceLabels: loadShowPlaceLabels(),
   lastDeleted: null,
 
   addTrip: (region, name) => {
@@ -367,6 +377,8 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
       imageUrl: place.imageUrl,
       linkUrl: place.linkUrl,
       time: place.time,
+      style: place.style,
+      googlePlaceId: place.googlePlaceId,
     })
   },
 
@@ -631,6 +643,11 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setFadedOpacity: (opacity) => {
     localStorage.setItem(FADED_OPACITY_KEY, String(opacity))
     set({ fadedOpacity: opacity })
+  },
+
+  setShowPlaceLabels: (show) => {
+    localStorage.setItem(SHOW_LABELS_KEY, String(show))
+    set({ showPlaceLabels: show })
   },
 
   // Applies externally-sourced data (e.g. a Supabase merge) AND persists it,

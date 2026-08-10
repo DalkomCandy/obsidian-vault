@@ -45,6 +45,7 @@ export function PlaceMarker({
   const style = place.style ?? categoryStyle
   const iconScale = usePlaceStore((s) => s.iconScale)
   const fadedOpacity = usePlaceStore((s) => s.fadedOpacity)
+  const showPlaceLabels = usePlaceStore((s) => s.showPlaceLabels)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
@@ -76,6 +77,7 @@ export function PlaceMarker({
           scale={iconScale}
           fadedOpacity={fadedOpacity}
           visitOrder={visitOrder}
+          label={showPlaceLabels ? place.name : undefined}
         />
       </AdvancedMarker>
       {isOpen && marker && (

@@ -3,6 +3,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { IconSizeControl } from './IconSizeControl'
 import { FadedOpacityControl } from './FadedOpacityControl'
 import { LocationControl } from './LocationControl'
+import { PlaceLabelControl } from './PlaceLabelControl'
 import { DiagnosticsPanel } from './DiagnosticsPanel'
 import { AccountControl } from './AccountControl'
 import type { LocationStatus } from '../hooks/useCurrentLocation'
@@ -49,6 +50,9 @@ export function SettingsMenu({ locationActive, locationStatus, onToggleLocation 
           </div>
           <div className="settings-menu-section">
             <FadedOpacityControl />
+          </div>
+          <div className="settings-menu-section">
+            <PlaceLabelControl />
           </div>
           <div className="settings-menu-section">
             <LocationControl active={locationActive} status={locationStatus} onToggle={onToggleLocation} />

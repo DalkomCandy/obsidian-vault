@@ -917,6 +917,22 @@
   border-radius: 6px;
 }
 
+/* The saved route linking two consecutive stops in a day's order, shown
+   between their rows -- indented under the drag handle's column so it
+   reads as "between" rather than as its own stop. */
+.day-leg-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 6px 1px 22px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.day-leg-emoji {
+  font-size: 10.5px;
+}
+
 .place-item:hover {
   background: var(--chip-bg);
 }
@@ -1360,7 +1376,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 0 20px 8px;
+  padding: 14px 20px 8px;
 }
 
 .group-mode-toggle {

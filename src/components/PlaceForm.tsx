@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Category, Place } from '../types'
+import { isValidTime } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 
@@ -38,6 +39,7 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    if (!isValidTime(time)) return
     onSave({
       ...draft,
       name: name.trim(),
@@ -85,7 +87,14 @@ export function PlaceForm({ draft, onSave, onCancel }: PlaceFormProps) {
 
         <label>
           방문 시간
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <input
+            type="text"
+            inputMode="numeric"
+            placeholder="HH:MM (예: 18:30)"
+            maxLength={5}
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+          />
         </label>
 
         <label>

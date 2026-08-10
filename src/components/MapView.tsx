@@ -12,6 +12,7 @@ import { RouteModePicker, type RouteOption } from './RouteModePicker'
 import { RouteLine } from './RouteLine'
 import { CurrentLocationMarker } from './CurrentLocationMarker'
 import { useCurrentLocation } from '../hooks/useCurrentLocation'
+import { useMapZoom } from '../hooks/useMapZoom'
 import { reportPlaceLookupError, reportPlaceLookupSuccess } from '../lib/placeLookupStatus'
 import { SettingsMenu } from './SettingsMenu'
 import { TripMenu } from './TripMenu'
@@ -80,6 +81,7 @@ export function MapView({
   const saveRoute = usePlaceStore((s) => s.saveRoute)
   const removeRoute = usePlaceStore((s) => s.removeRoute)
   const placesLib = useMapsLibrary('places')
+  const zoom = useMapZoom()
 
   const [routeCandidate, setRouteCandidate] = useState<{ origin: Place; destination: Place } | null>(null)
   const { location, status, error: locationError, toggle: toggleLocation, active: locationActive } = useCurrentLocation()
@@ -258,7 +260,7 @@ export function MapView({
           />
         )}
         {visibleRoutes.map((route) => (
-          <RouteLine key={route.id} route={route} onDelete={() => removeRoute(route.id)} />
+          <RouteLine key={route.id} route={route} zoom={zoom} onDelete={() => removeRoute(route.id)} />
         ))}
         {location && locationActive && (
           <CurrentLocationMarker

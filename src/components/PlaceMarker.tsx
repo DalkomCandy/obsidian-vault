@@ -31,6 +31,7 @@ export function PlaceMarker({
 }: PlaceMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
   const deletePlaceWithUndo = usePlaceStore((s) => s.deletePlaceWithUndo)
+  const duplicatePlace = usePlaceStore((s) => s.duplicatePlace)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
@@ -116,6 +117,16 @@ export function PlaceMarker({
               </a>
               <button onClick={() => onRouteFrom(place)}>경로</button>
               <button onClick={() => onEditPlace(place)}>수정</button>
+              <button
+                title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
+                onClick={() => {
+                  const copy = duplicatePlace(place.id)
+                  onOpenChange(false)
+                  if (copy) onEditPlace(copy)
+                }}
+              >
+                복제
+              </button>
               <button onClick={handleAiSummarize} disabled={aiLoading}>
                 {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}
               </button>

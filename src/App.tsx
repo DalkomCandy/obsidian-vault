@@ -18,6 +18,7 @@ import { snapHeightPx } from './hooks/useSheetDrag'
 import {
   TRAVEL_MODE_EMOJI,
   TRAVEL_MODE_LABELS,
+  googleMapsViewUrl,
   sortByVisitOrder,
   type Category,
   type Place,
@@ -226,13 +227,18 @@ function App() {
 
   const handleSaveDraft = (category: Category) => {
     if (!selectedTripId || !draftLocation) return
+    // Prefer the actual Places listing (accurate for a real business) over a
+    // raw-coordinate search link, but always have one -- a plain map click
+    // never gets a googleMapsUri from the Places fetch.
+    const mapsLink = draftLocation.googleMapsUri ?? googleMapsViewUrl(draftLocation)
+    const memo = [draftLocation.address, `구글 지도: ${mapsLink}`].filter(Boolean).join('\n')
     addPlace({
       tripId: selectedTripId,
       name: draftLocation.name,
       lat: draftLocation.lat,
       lng: draftLocation.lng,
       category,
-      memo: draftLocation.address ?? '',
+      memo,
       // While a day is focused, anything added is part of that day's plan.
       ...(focusedDay !== null ? { day: focusedDay } : {}),
     })

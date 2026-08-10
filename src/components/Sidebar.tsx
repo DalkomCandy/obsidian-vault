@@ -3,6 +3,7 @@ import type { Category, Place } from '../types'
 import {
   MAX_DAY_COUNT,
   NEW_CATEGORY_STYLE,
+  TRAVEL_MODE_EMOJI,
   dayLabel,
   formatDistance,
   formatDuration,
@@ -277,6 +278,23 @@ export function Sidebar({
     </li>
   )
 
+  // A saved route between two consecutive stops in the day's order shows up
+  // as its own small row between them -- silent (no row at all) if that leg
+  // was never checked, since day-summary already surfaces "N구간 미확인".
+  const renderLegRow = (from: Place, to: Place) => {
+    const route = routeByPair.get(`${from.id}->${to.id}`) ?? routeByPair.get(`${to.id}->${from.id}`)
+    if (!route) return null
+    return (
+      <li key={`leg-${from.id}-${to.id}`} className="day-leg-row">
+        <span className="day-leg-emoji">{TRAVEL_MODE_EMOJI[route.mode]}</span>
+        <span>
+          {route.durationText}
+          {route.distanceText ? ` · ${route.distanceText}` : ''}
+        </span>
+      </li>
+    )
+  }
+
   const renderDaySection = (key: string, title: string, list: Place[], day: number | undefined) => {
     const summary = day === undefined ? null : daySummary(list)
     const focused = day !== undefined && day === focusedDay
@@ -321,7 +339,13 @@ export function Sidebar({
         {list.length === 0 ? (
           <p className="day-empty">여기로 장소를 끌어다 놓으세요</p>
         ) : (
-          <ul>{list.map(renderPlaceRow)}</ul>
+          <ul>
+            {list.flatMap((place, i) => {
+              const next = list[i + 1]
+              const leg = next ? renderLegRow(place, next) : null
+              return leg ? [renderPlaceRow(place), leg] : [renderPlaceRow(place)]
+            })}
+          </ul>
         )}
       </div>
     )

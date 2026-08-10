@@ -242,7 +242,10 @@ interface PlaceStore {
   addTrip: (region: string, name: string) => Trip
   renameTrip: (id: string, name: string) => void
   removeTrip: (id: string) => void
-  addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
+  addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => Place
+  /** Copies a place (same name/location/category/etc) as a new entry -- for a
+   * spot you'll visit more than once, like accommodation you return to. */
+  duplicatePlace: (id: string) => Place | null
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
   /** Removes the place immediately but keeps it (plus its routes) recoverable via undoDeletePlace for a few seconds. */
@@ -343,6 +346,24 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     const places = [...get().places, newPlace]
     set({ places })
     persistPlaces(places)
+    return newPlace
+  },
+
+  duplicatePlace: (id) => {
+    const place = get().places.find((p) => p.id === id)
+    if (!place) return null
+    return get().addPlace({
+      tripId: place.tripId,
+      name: place.name,
+      lat: place.lat,
+      lng: place.lng,
+      category: place.category,
+      memo: place.memo,
+      day: place.day,
+      imageUrl: place.imageUrl,
+      linkUrl: place.linkUrl,
+      time: place.time,
+    })
   },
 
   updatePlace: (id, patch) => {

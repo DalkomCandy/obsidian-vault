@@ -11,7 +11,7 @@
   --chip-active-bg: #2563eb;
   --chip-active-text: #ffffff;
   color-scheme: light dark;
-  font: 15px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  font: 15px/1.5 'Noto Sans KR', system-ui, 'Segoe UI', Roboto, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {

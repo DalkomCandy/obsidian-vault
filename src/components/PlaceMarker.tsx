@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
+import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef, useMapsLibrary } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
 import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE, googleMapsNavigationUrl, googleMapsViewUrl } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 import { PopupClose } from './PopupClose'
 import { applySummaryToMemo, matchCategoryId, summarizePlace } from '../lib/ollama'
+import { resolveGooglePlaceId } from '../lib/resolvePlaceId'
 
 interface PlaceMarkerProps {
   place: Place
@@ -55,6 +56,22 @@ export function PlaceMarker({
   useEffect(() => {
     if (!isOpen) setMoreOpen(false)
   }, [isOpen])
+
+  // Places saved before ids were stored (and KML imports) only link to
+  // coordinates. Opening one is the natural moment to look its listing up
+  // once and keep it, so the link works from then on -- including on other
+  // devices, since the id syncs with the rest of the place.
+  const placesLib = useMapsLibrary('places')
+  useEffect(() => {
+    if (!isOpen || !placesLib || place.googlePlaceId) return
+    let cancelled = false
+    void resolveGooglePlaceId(placesLib, place).then((id) => {
+      if (!cancelled && id) updatePlace(place.id, { googlePlaceId: id })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, placesLib, place, updatePlace])
 
   const handleAiSummarize = async () => {
     setAiLoading(true)
@@ -144,51 +161,51 @@ export function PlaceMarker({
               >
                 삭제
               </button>
-              <div className="popup-more">
-                <button
-                  className="popup-more-btn"
-                  title="더보기"
-                  aria-expanded={moreOpen}
-                  onClick={() => setMoreOpen((v) => !v)}
-                >
-                  ⋯
-                </button>
-                {moreOpen && (
-                  <div className="popup-more-menu">
-                    <button
-                      onClick={() => {
-                        setMoreOpen(false)
-                        onRouteFrom(place)
-                      }}
-                    >
-                      🔀 여기서 경로 그리기
-                    </button>
-                    <button
-                      onClick={() => {
-                        setMoreOpen(false)
-                        onEditStyle(place)
-                      }}
-                    >
-                      🎨 이 장소 스타일{place.style ? ' (지정됨)' : ''}
-                    </button>
-                    <button
-                      title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
-                      onClick={() => {
-                        setMoreOpen(false)
-                        const copy = duplicatePlace(place.id)
-                        onOpenChange(false)
-                        if (copy) onEditPlace(copy)
-                      }}
-                    >
-                      ⧉ 복제
-                    </button>
-                    <button onClick={handleAiSummarize} disabled={aiLoading}>
-                      {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}
-                    </button>
-                  </div>
-                )}
-              </div>
+              <button
+                className="popup-more-btn"
+                title="더보기"
+                aria-expanded={moreOpen}
+                onClick={() => setMoreOpen((v) => !v)}
+              >
+                ⋯
+              </button>
             </div>
+            {/* Expands the popup rather than floating over it: an absolutely
+                positioned menu gets clipped by the InfoWindow's own box. */}
+            {moreOpen && (
+              <div className="popup-more-row">
+                <button
+                  onClick={() => {
+                    setMoreOpen(false)
+                    onRouteFrom(place)
+                  }}
+                >
+                  🔀 여기서 경로 그리기
+                </button>
+                <button
+                  onClick={() => {
+                    setMoreOpen(false)
+                    onEditStyle(place)
+                  }}
+                >
+                  🎨 이 장소 스타일{place.style ? ' (지정됨)' : ''}
+                </button>
+                <button
+                  title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
+                  onClick={() => {
+                    setMoreOpen(false)
+                    const copy = duplicatePlace(place.id)
+                    onOpenChange(false)
+                    if (copy) onEditPlace(copy)
+                  }}
+                >
+                  ⧉ 복제
+                </button>
+                <button onClick={handleAiSummarize} disabled={aiLoading}>
+                  {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}
+                </button>
+              </div>
+            )}
           </div>
         </InfoWindow>
       )}

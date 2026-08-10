@@ -10,10 +10,24 @@ interface RouteLineProps {
   onDelete: () => void
 }
 
-const MIN_ZOOM_FOR_LABEL = 13
+const MIN_ZOOM_FOR_LABEL = 15
+
+/**
+ * Halfway along the drawn line. Indexing `path[length / 2]` lands on the
+ * *destination* for a two-point path -- which is exactly what a manually
+ * entered leg has -- so even-length paths average their two middle points
+ * instead of rounding to one of them.
+ */
+function midpointOf(path: SavedRoute['path']): SavedRoute['path'][number] | undefined {
+  if (path.length === 0) return undefined
+  const mid = (path.length - 1) / 2
+  const a = path[Math.floor(mid)]
+  const b = path[Math.ceil(mid)]
+  return { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 }
+}
 
 export function RouteLine({ route, zoom, onDelete }: RouteLineProps) {
-  const midpoint = route.path[Math.floor(route.path.length / 2)]
+  const midpoint = midpointOf(route.path)
   const color = TRAVEL_MODE_COLOR[route.mode]
   const showLabel = zoom === undefined || zoom >= MIN_ZOOM_FOR_LABEL
 

@@ -786,8 +786,9 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  min-width: 220px;
+  min-width: min(220px, calc(100vw - 108px));
   padding-right: 22px;
+  box-sizing: border-box;
 }
 
 .route-picker-title {
@@ -1220,9 +1221,10 @@
 .popup-content {
   position: relative;
   font-size: 11.5px;
-  min-width: 216px;
-  max-width: 288px;
+  min-width: min(216px, calc(100vw - 108px));
+  max-width: min(288px, calc(100vw - 88px));
   padding: 0 26px 0 4px;
+  box-sizing: border-box;
   color: #111827;
   text-align: left;
 }
@@ -1282,12 +1284,8 @@
   color: #1f2430;
 }
 
-.popup-more {
-  position: relative;
-  margin-left: auto;
-}
-
 .popup-more-btn {
+  margin-left: auto;
   border: 1px solid #d1d5db;
   background: #f9fafb;
   border-radius: 4px;
@@ -1297,34 +1295,35 @@
   color: #1f2430;
 }
 
-.popup-more-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  z-index: 5;
+/* The overflow actions, revealed as a stacked block under the main row.
+   Kept in normal flow so the InfoWindow grows to fit them -- anything
+   absolutely positioned here is clipped by the InfoWindow's own box. */
+.popup-more-row {
   display: flex;
   flex-direction: column;
-  min-width: 168px;
-  background: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-  padding: 4px;
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid #e5e7eb;
 }
 
-.popup-more-menu button {
+.popup-more-row button {
   border: none;
   background: none;
   text-align: left;
   white-space: nowrap;
-  padding: 7px 9px;
+  padding: 7px 6px;
   border-radius: 5px;
   font-size: 12px;
   color: #1f2430;
 }
 
-.popup-more-menu button:hover:not(:disabled) {
+.popup-more-row button:hover:not(:disabled) {
   background: #f3f4f6;
+}
+
+.popup-more-row button:disabled {
+  opacity: 0.6;
 }
 
 .popup-actions button.danger {
@@ -1954,9 +1953,13 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
-  min-width: 312px;
-  max-width: 360px;
+  /* Google sizes the InfoWindow to this content and then adds its own
+     chrome, so a fixed min-width overflows a narrow phone and the right
+     edge (the 저장 button) gets clipped. Cap both ends to the viewport. */
+  min-width: min(312px, calc(100vw - 108px));
+  max-width: min(360px, calc(100vw - 88px));
   padding: 0 26px 0 4px;
+  box-sizing: border-box;
   text-align: left;
 }
 
@@ -2411,7 +2414,10 @@
     height: 46px;
   }
 
-  /* Popups must fit the screen, not a desktop column. */
+  /* Popups must fit the screen, not a desktop column. These set an explicit
+     width, so they rely on the border-box sizing declared in their base
+     rules -- without it the 26px of padding is added on top and the right
+     edge (the 저장 button) ends up clipped by the InfoWindow. */
   .quick-add {
     min-width: 0;
     width: min(75vw, 320px);

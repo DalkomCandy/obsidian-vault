@@ -88,6 +88,11 @@
   right: 0;
   z-index: 30;
   width: 220px;
+  /* The panel has grown (diagnostics, account, AI status...) enough that on
+     a short viewport it can now run past the bottom of the screen. Cap it
+     to what's actually left below the button and let it scroll instead. */
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -911,6 +916,11 @@
   overflow-x: auto;
   scrollbar-width: none;
   padding-bottom: 2px;
+  padding-right: 24px;
+  /* Fades the last ~28px so a cut-off chip reads as "more to scroll" rather
+     than looking like the list just ends mid-chip. */
+  mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
 }
 
 .category-filter.compact .category-filter-chips::-webkit-scrollbar {

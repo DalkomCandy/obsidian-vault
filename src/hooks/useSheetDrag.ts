@@ -12,7 +12,8 @@ const MIN_PX = 90
 // counts as a tap (cycling snap points) rather than a drag.
 const DRAG_THRESHOLD_PX = 6
 
-function snapHeightPx(snap: SheetSnap): number {
+/** Exposed so callers (map fit/pan padding) can match the sheet's actual rendered height. */
+export function snapHeightPx(snap: SheetSnap): number {
   if (snap === 'peek') return PEEK_PX
   if (snap === 'half') return window.innerHeight * HALF_RATIO
   return window.innerHeight * FULL_RATIO

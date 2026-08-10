@@ -3,7 +3,7 @@ import { Map, useMapsLibrary, useMap, type MapMouseEvent } from '@vis.gl/react-g
 import type { Category, Place, TravelMode } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { GOOGLE_MAPS_MAP_ID, DEFAULT_CENTER, DEFAULT_ZOOM } from '../lib/googleMaps'
-import { MapController } from './MapController'
+import { MapController, type MapPadding } from './MapController'
 import { PlaceMarker } from './PlaceMarker'
 import { SearchBox } from './SearchBox'
 import type { SearchResult } from './SearchBox'
@@ -42,6 +42,8 @@ interface MapViewProps {
    * a bottom sheet here and starting it with those controls would push the
    * actual place list well below the fold. */
   isMobile: boolean
+  /** How much of the map div's edges the floating chrome actually covers. */
+  mapPadding: MapPadding
   focusPlace: Place | null
   fitPlaces: Place[] | null
   draftLocation: DraftLocation | null
@@ -61,6 +63,7 @@ export function MapView({
   places,
   visitOrderByPlaceId,
   isMobile,
+  mapPadding,
   focusPlace,
   fitPlaces,
   draftLocation,
@@ -211,7 +214,7 @@ export function MapView({
         zoomControl={false}
         onClick={handleClick}
       >
-        <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} />
+        <MapController focusPlace={focusPlace} fitPlaces={fitPlaces} mapPadding={mapPadding} />
         {markers}
         {draftLocation && (
           <QuickAddMarker

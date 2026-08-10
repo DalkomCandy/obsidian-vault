@@ -12,6 +12,7 @@ import { setSyncUser } from './store/sync'
 import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { useIsMobile } from './hooks/useMediaQuery'
+import { snapHeightPx } from './hooks/useSheetDrag'
 import {
   TRAVEL_MODE_EMOJI,
   TRAVEL_MODE_LABELS,
@@ -33,6 +34,13 @@ const SAME_PLACE_EPSILON = 0.0001
 function isSameSpot(a: { lat: number; lng: number }, b: { lat: number; lng: number }): boolean {
   return Math.abs(a.lat - b.lat) < SAME_PLACE_EPSILON && Math.abs(a.lng - b.lng) < SAME_PLACE_EPSILON
 }
+
+// How tall the floating region/search/settings bar + category chip row are
+// together on mobile -- keep in sync with the `top` offsets App.css gives
+// .map-controls/.offline-banner for the same reason (they clear the same
+// obstruction). Used so panning/fitting the map can avoid centring content
+// behind it, not just for visually parking other controls below it.
+const MOBILE_TOPBAR_COVER_PX = 112
 
 const SIDEBAR_WIDTH_KEY = 'travel-map.sidebarWidth'
 const MIN_SIDEBAR_WIDTH = 240
@@ -71,6 +79,15 @@ function App() {
   // On a phone the list is a bottom sheet over a full-bleed map, snapping
   // between a peek (map-first), half, and near-full (list-first).
   const [sheetSnap, setSheetSnap] = useState<'peek' | 'half' | 'full'>('half')
+
+  // The sheet and top bars sit *over* the map on mobile rather than beside
+  // it, so fitting/panning to a place has to steer around them or a marker
+  // can end up centred right behind the sheet. Desktop's sidebar pushes the
+  // map div itself instead, so it needs no correction here.
+  const mapPadding = useMemo(
+    () => (isMobile ? { top: MOBILE_TOPBAR_COVER_PX, bottom: Math.round(snapHeightPx(sheetSnap)) } : { top: 0, bottom: 0 }),
+    [isMobile, sheetSnap],
+  )
 
   // Sync follows the session: data lands in the signed-in account's own row,
   // and signing out simply stops syncing without touching what's stored here.
@@ -299,6 +316,7 @@ function App() {
             places={mapPlaces}
             visitOrderByPlaceId={visitOrderByPlaceId}
             isMobile={isMobile}
+            mapPadding={mapPadding}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}

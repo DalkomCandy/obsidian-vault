@@ -3,6 +3,7 @@ import { APIProvider } from '@vis.gl/react-google-maps'
 import { MapView } from './components/MapView'
 import { Sidebar } from './components/Sidebar'
 import { DeleteUndoToast } from './components/DeleteUndoToast'
+import { PwaUpdateBanner } from './components/PwaUpdateBanner'
 import { PlaceForm, draftFromPlace, type PlaceDraft } from './components/PlaceForm'
 import type { SearchResult } from './components/SearchBox'
 import type { DraftLocation } from './components/QuickAddMarker'
@@ -271,7 +272,11 @@ function App() {
   ) => {
     const destination = places.find((p) => p.id === destinationId)
     if (!destination) return
-    const line = `${TRAVEL_MODE_EMOJI[mode]} ${originName}에서 ${TRAVEL_MODE_LABELS[mode]} ${option.durationText} (${option.distanceText})`
+    // A manually-entered leg (see RouteModePicker's fallback for modes the
+    // Directions API can't answer) has no real distance -- its distanceText
+    // slot carries a line/note instead, so it's worth showing without a
+    // physical-distance-shaped "()" around it, but empty ones are dropped.
+    const line = `${TRAVEL_MODE_EMOJI[mode]} ${originName}에서 ${TRAVEL_MODE_LABELS[mode]} ${option.durationText}${option.distanceText ? ` (${option.distanceText})` : ''}`
     updatePlace(destinationId, { memo: destination.memo ? `${destination.memo}\n${line}` : line })
   }
 
@@ -338,6 +343,7 @@ function App() {
           <PlaceForm draft={editDraft} onSave={handleSaveEdit} onCancel={() => setEditDraft(null)} />
         )}
         <DeleteUndoToast />
+        <PwaUpdateBanner />
       </div>
     </APIProvider>
   )

@@ -28,6 +28,41 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
   const routesLib = useMapsLibrary('routes')
   const [options, setOptions] = useState<Partial<Record<TravelMode, RouteOption | RouteFailure>>>({})
   const [loading, setLoading] = useState(true)
+  // Which failed mode's manual-entry form is open, if any -- lets a leg the
+  // Directions API can't answer (most notably transit in Japan) still get
+  // saved with a hand-typed duration/line note instead of only a hand-off link.
+  const [manualEntryMode, setManualEntryMode] = useState<TravelMode | null>(null)
+  const [manualMinutes, setManualMinutes] = useState('')
+  const [manualNote, setManualNote] = useState('')
+
+  const startManualEntry = (mode: TravelMode) => {
+    setManualEntryMode(mode)
+    setManualMinutes('')
+    setManualNote('')
+  }
+
+  const submitManualEntry = () => {
+    if (!manualEntryMode) return
+    const minutes = Number(manualMinutes)
+    const hasMinutes = Number.isFinite(minutes) && minutes > 0
+    if (!hasMinutes && !manualNote.trim()) return
+    onSelect(manualEntryMode, {
+      // A straight line rather than an empty path -- RouteLine puts its
+      // delete-on-click duration label at the path's midpoint, so an empty
+      // path would leave a manual entry with no way to remove it from the map.
+      path: [
+        { lat: origin.lat, lng: origin.lng },
+        { lat: destination.lat, lng: destination.lng },
+      ],
+      durationText: hasMinutes ? `${minutes}분` : '시간 미입력',
+      // Reuses the "distance" slot to carry the line/note text -- the saved
+      // memo line already appends it in parens right after the duration.
+      distanceText: manualNote.trim(),
+      durationSeconds: hasMinutes ? Math.round(minutes * 60) : 0,
+      distanceMeters: 0,
+    })
+    setManualEntryMode(null)
+  }
 
   useEffect(() => {
     if (!routesLib) return
@@ -97,22 +132,73 @@ export function RouteModePicker({ origin, destination, onSelect, onCancel }: Rou
 
                   // Google's own app covers legs the Directions API won't
                   // answer for (transit in Japan, most notably), so a dead
-                  // row becomes a hand-off instead of a dead end.
+                  // row becomes a hand-off instead of a dead end -- plus a
+                  // manual-entry option so the leg can still be saved.
                   if (failed) {
+                    if (manualEntryMode === mode) {
+                      return (
+                        <div key={mode} className="route-picker-option route-picker-option-failed">
+                          <div className="route-picker-manual-form">
+                            <input
+                              type="number"
+                              min={0}
+                              inputMode="numeric"
+                              placeholder="소요 시간 (분)"
+                              autoFocus
+                              value={manualMinutes}
+                              onChange={(e) => setManualMinutes(e.target.value)}
+                            />
+                            <input
+                              type="text"
+                              placeholder="노선/메모 (선택, 예: 야마노테선)"
+                              value={manualNote}
+                              onChange={(e) => setManualNote(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') submitManualEntry()
+                                if (e.key === 'Escape') setManualEntryMode(null)
+                              }}
+                            />
+                            <div className="route-picker-manual-actions">
+                              <button type="button" onClick={() => setManualEntryMode(null)}>
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                className="primary"
+                                disabled={!manualMinutes.trim() && !manualNote.trim()}
+                                onClick={submitManualEntry}
+                              >
+                                저장
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    }
                     return (
-                      <a
-                        key={mode}
-                        className="route-picker-option route-picker-option-link"
-                        href={googleMapsDirectionsUrl(origin, destination, mode)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <span className="route-picker-emoji">{TRAVEL_MODE_EMOJI[mode]}</span>
-                        <span className="route-picker-label">{TRAVEL_MODE_LABELS[mode]}</span>
-                        <span className="route-picker-duration">
-                          {option === 'denied' ? 'API 설정 필요' : 'Google 지도 ↗'}
-                        </span>
-                      </a>
+                      <div key={mode} className="route-picker-option route-picker-option-failed">
+                        <div className="route-picker-option-failed-row">
+                          <a
+                            className="route-picker-option-failed-link"
+                            href={googleMapsDirectionsUrl(origin, destination, mode)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <span className="route-picker-emoji">{TRAVEL_MODE_EMOJI[mode]}</span>
+                            <span className="route-picker-label">{TRAVEL_MODE_LABELS[mode]}</span>
+                            <span className="route-picker-duration">
+                              {option === 'denied' ? 'API 설정 필요' : 'Google 지도 ↗'}
+                            </span>
+                          </a>
+                          <button
+                            type="button"
+                            className="route-picker-manual-btn"
+                            onClick={() => startManualEntry(mode)}
+                          >
+                            직접 입력
+                          </button>
+                        </div>
+                      </div>
                     )
                   }
 

@@ -20,7 +20,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // A user-facing "update available" banner (PwaUpdateBanner.tsx) drives
+      // the refresh instead of auto-activating in the background -- with
+      // autoUpdate, an installed PWA left open for a whole trip could sit on
+      // a stale build with no visible signal that a newer one shipped.
+      registerType: 'prompt',
+      // The React hook (virtual:pwa-register/react) registers the service
+      // worker itself; the plugin's own auto-injected script would double-register.
+      injectRegister: false,
       includeAssets: ['favicon.svg'],
       manifest: {
         name: '여행 지도',

@@ -770,20 +770,90 @@
 
 /* Hand-off row for legs the Directions API can't answer -- looks like a
    muted version of a real option so it reads as a fallback, not a result. */
-.route-picker-option-link {
-  text-decoration: none;
+.route-picker-option-failed {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
   background: #ffffff;
   border-style: dashed;
+  padding: 6px 8px 6px 10px;
 }
 
-.route-picker-option-link .route-picker-label,
-.route-picker-option-link .route-picker-emoji {
+.route-picker-option-failed-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-picker-option-failed-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.route-picker-option-failed-link .route-picker-label,
+.route-picker-option-failed-link .route-picker-emoji {
   opacity: 0.6;
 }
 
-.route-picker-option-link .route-picker-duration {
+.route-picker-option-failed-link .route-picker-duration {
   font-weight: 500;
   font-size: 11.5px;
+}
+
+.route-picker-manual-btn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px;
+  white-space: nowrap;
+}
+
+.route-picker-manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-picker-manual-form input {
+  font: inherit;
+  font-size: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+}
+
+.route-picker-manual-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.route-picker-manual-actions button {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #1f2430;
+}
+
+.route-picker-manual-actions button.primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.route-picker-manual-actions button.primary:disabled {
+  border-color: #9ca3af;
+  background: #9ca3af;
 }
 
 .route-picker-emoji {
@@ -1651,6 +1721,41 @@
   color: var(--accent-contrast);
   font-size: 12.5px;
   white-space: nowrap;
+}
+
+/* ---------- PWA update banner ---------- */
+
+.pwa-update-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 12px;
+  /* Clears the notch/status bar on an installed iOS PWA. */
+  padding-top: max(8px, env(safe-area-inset-top));
+}
+
+.pwa-update-banner button {
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.pwa-update-banner button:hover {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* ---------- Delete-undo toast (replaces the "삭제할까요?" confirm dialog) ---------- */

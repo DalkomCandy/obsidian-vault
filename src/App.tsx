@@ -10,6 +10,7 @@ import { usePlaceStore } from './store/usePlaceStore'
 import { GOOGLE_MAPS_API_KEY } from './lib/googleMaps'
 import { loadRemoteState } from './store/sync'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
+import { useIsMobile } from './hooks/useMediaQuery'
 import {
   TRAVEL_MODE_EMOJI,
   TRAVEL_MODE_LABELS,
@@ -65,6 +66,10 @@ function App() {
   const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth)
   const sidebarWidthRef = useRef(sidebarWidth)
   const online = useOnlineStatus()
+  const isMobile = useIsMobile()
+  // On a phone the list is a bottom sheet over a full-bleed map, snapping
+  // between a peek (map-first), half, and near-full (list-first).
+  const [sheetSnap, setSheetSnap] = useState<'peek' | 'half' | 'full'>('half')
 
   useEffect(() => {
     loadRemoteState()
@@ -262,18 +267,23 @@ function App() {
 
   return (
     <APIProvider apiKey={GOOGLE_MAPS_API_KEY} libraries={['places', 'routes']}>
-      <div className="app-shell">
+      <div className={isMobile ? `app-shell mobile sheet-${sheetSnap}` : 'app-shell'}>
         <Sidebar
           places={sidebarPlaces}
           onEditPlace={handleEditPlace}
           onFocusPlace={handleFocusPlace}
-          width={sidebarWidth}
+          width={isMobile ? undefined : sidebarWidth}
+          sheetSnap={isMobile ? sheetSnap : null}
+          onSheetSnapChange={setSheetSnap}
+          onFocusFromSheet={() => setSheetSnap('peek')}
         />
-        <div
-          className="sidebar-resize-handle"
-          onMouseDown={handleResizeStart}
-          onTouchStart={handleResizeStart}
-        />
+        {!isMobile && (
+          <div
+            className="sidebar-resize-handle"
+            onMouseDown={handleResizeStart}
+            onTouchStart={handleResizeStart}
+          />
+        )}
         <main className="map-pane">
           {!online && (
             <div className="offline-banner">

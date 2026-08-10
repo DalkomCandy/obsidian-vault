@@ -11,6 +11,7 @@ import {
 } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
+import { DRAG_ID_ATTR, DROP_GROUP_ATTR, useRowDrag } from '../hooks/useRowDrag'
 import { ImportPlacesDialog } from './ImportPlacesDialog'
 import { TimeCell } from './TimeCell'
 import { TripPicker } from './TripPicker'
@@ -18,12 +19,22 @@ import { SettingsMenu } from './SettingsMenu'
 import { CategoryStylePicker } from './CategoryStylePicker'
 import { CategoryFilter } from './CategoryFilter'
 
+export type SheetSnap = 'peek' | 'half' | 'full'
+
 interface SidebarProps {
   places: Place[]
   onEditPlace: (place: Place) => void
   onFocusPlace: (place: Place) => void
-  width: number
+  /** Desktop only -- the mobile sheet is sized by snap point, not by width. */
+  width?: number
+  /** Non-null on phones, where the sidebar renders as a bottom sheet. */
+  sheetSnap: SheetSnap | null
+  onSheetSnapChange: (snap: SheetSnap) => void
+  /** Collapse the sheet so the map is visible after picking a place. */
+  onFocusFromSheet: () => void
 }
+
+const SNAP_ORDER: SheetSnap[] = ['peek', 'half', 'full']
 
 type GroupMode = 'category' | 'day'
 
@@ -41,7 +52,15 @@ function nextEmptyCategoryName(existingLabels: string[]): string {
   return `${base} ${n}`
 }
 
-export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarProps) {
+export function Sidebar({
+  places,
+  onEditPlace,
+  onFocusPlace,
+  width,
+  sheetSnap,
+  onSheetSnapChange,
+  onFocusFromSheet,
+}: SidebarProps) {
   const removePlace = usePlaceStore((s) => s.removePlace)
   const movePlace = usePlaceStore((s) => s.movePlace)
   const setPlaceCategory = usePlaceStore((s) => s.setPlaceCategory)
@@ -73,12 +92,20 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [renamingCategory, setRenamingCategory] = useState<Category | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
-  const [draggedId, setDraggedId] = useState<string | null>(null)
   const [addingRegion, setAddingRegion] = useState(false)
   const [regionDraft, setRegionDraft] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState<Set<Category>>(new Set())
   const [groupMode, setGroupModeState] = useState<GroupMode>(loadGroupMode)
   const [importing, setImporting] = useState(false)
+
+  const { draggedId, hoverTarget, handleProps } = useRowDrag({
+    onDropOnRow: (id, targetId) => movePlace(id, targetId, groupMode),
+    onDropOnGroup: (id, group) => {
+      const [kind, value] = [group.slice(0, group.indexOf(':')), group.slice(group.indexOf(':') + 1)]
+      if (kind === 'day') setPlaceDay(id, value === 'none' ? undefined : Number(value))
+      else if (kind === 'cat') setPlaceCategory(id, value)
+    },
+  })
 
   const setGroupMode = (mode: GroupMode) => {
     localStorage.setItem(GROUP_MODE_KEY, mode)
@@ -231,25 +258,27 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   const renderPlaceRow = (place: Place) => (
     <li
       key={place.id}
-      className={place.id === draggedId ? 'place-item dragging' : 'place-item'}
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData('text/plain', place.id)
-        e.dataTransfer.effectAllowed = 'move'
-        setDraggedId(place.id)
-      }}
-      onDragEnd={() => setDraggedId(null)}
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        const draggedFromTransfer = e.dataTransfer.getData('text/plain')
-        if (draggedFromTransfer) movePlace(draggedFromTransfer, place.id, groupMode)
-        setDraggedId(null)
-      }}
+      {...{ [DRAG_ID_ATTR]: place.id }}
+      className={
+        place.id === draggedId
+          ? 'place-item dragging'
+          : hoverTarget.rowId === place.id
+            ? 'place-item drop-target'
+            : 'place-item'
+      }
     >
-      <span className="drag-handle">⠿</span>
-      <button className="place-main" onClick={() => onFocusPlace(place)}>
+      <span className="drag-handle" title="끌어서 순서/일차 변경" {...handleProps(place.id)}>
+        ⠿
+      </span>
+      <button
+        className="place-main"
+        onClick={() => {
+          onFocusPlace(place)
+          // Tapping a place on a phone means "show me where that is" -- keep
+          // the sheet over the map and you can't see what you just picked.
+          if (sheetSnap && sheetSnap !== 'peek') onFocusFromSheet()
+        }}
+      >
         <span className="place-name">{place.name}</span>
       </button>
       {selectedTripId && groupMode === 'day' && (
@@ -291,15 +320,15 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
     const focused = day !== undefined && day === focusedDay
     return (
       <div
-        className={focused ? 'region-group day-focused' : 'region-group'}
         key={key}
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={(e) => {
-          e.preventDefault()
-          const draggedFromTransfer = e.dataTransfer.getData('text/plain')
-          if (draggedFromTransfer) setPlaceDay(draggedFromTransfer, day)
-          setDraggedId(null)
-        }}
+        {...{ [DROP_GROUP_ATTR]: `day:${day ?? 'none'}` }}
+        className={[
+          'region-group',
+          focused ? 'day-focused' : '',
+          hoverTarget.group === `day:${day ?? 'none'}` ? 'drop-target' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')}
       >
         <div className="region-title static">
           {day === undefined ? (
@@ -337,7 +366,24 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
   }
 
   return (
-    <aside className="sidebar" style={{ width, minWidth: width }}>
+    <aside
+      className={sheetSnap ? 'sidebar sidebar-sheet' : 'sidebar'}
+      style={sheetSnap ? undefined : { width, minWidth: width }}
+    >
+      {sheetSnap && (
+        <button
+          type="button"
+          className="sheet-grabber"
+          aria-label={sheetSnap === 'full' ? '목록 접기' : '목록 펼치기'}
+          title="눌러서 목록 크기 조절"
+          onClick={() => {
+            const next = SNAP_ORDER[(SNAP_ORDER.indexOf(sheetSnap) + 1) % SNAP_ORDER.length]
+            onSheetSnapChange(next)
+          }}
+        >
+          <span className="sheet-grabber-bar" />
+        </button>
+      )}
       {importing && selectedTrip && (
         <ImportPlacesDialog
           targetTrip={selectedTrip}
@@ -485,15 +531,11 @@ export function Sidebar({ places, onEditPlace, onFocusPlace, width }: SidebarPro
           groupMode === 'category' &&
           groupedByCategory.map(([category, list]) => (
             <div
-              className="region-group"
               key={category}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                const draggedFromTransfer = e.dataTransfer.getData('text/plain')
-                if (draggedFromTransfer) setPlaceCategory(draggedFromTransfer, category)
-                setDraggedId(null)
-              }}
+              {...{ [DROP_GROUP_ATTR]: `cat:${category}` }}
+              className={
+                hoverTarget.group === `cat:${category}` ? 'region-group drop-target' : 'region-group'
+              }
             >
               <div className="region-title static">
                 <button

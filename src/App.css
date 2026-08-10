@@ -1733,3 +1733,220 @@
   padding: 10px 16px;
   font-size: 13px;
 }
+
+/* ==================== Mobile: bottom-sheet layout ==================== */
+
+/* Below this width a 320px side panel would leave the map ~65px, so the
+   list becomes a sheet over a full-bleed map instead of sitting beside it. */
+@media (max-width: 767px) {
+  .app-shell.mobile {
+    display: block;
+    position: relative;
+  }
+
+  .app-shell.mobile .map-pane {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .sidebar-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    width: auto;
+    min-width: 0;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.18);
+    transition: height 0.22s ease;
+    /* Clear the home indicator on notched phones. */
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .app-shell.mobile.sheet-peek .sidebar-sheet {
+    height: 92px;
+  }
+
+  .app-shell.mobile.sheet-half .sidebar-sheet {
+    height: 52vh;
+  }
+
+  .app-shell.mobile.sheet-full .sidebar-sheet {
+    height: 88vh;
+  }
+
+  .sheet-grabber {
+    flex-shrink: 0;
+    width: 100%;
+    border: none;
+    background: none;
+    padding: 10px 0 6px;
+    display: flex;
+    justify-content: center;
+    /* The sheet scrolls; the grabber must not be swallowed by that scroll. */
+    position: sticky;
+    top: 0;
+    background: var(--panel-bg);
+    z-index: 2;
+  }
+
+  .sheet-grabber-bar {
+    display: block;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  /* Keep the map's own furniture clear of the sheet. */
+  .app-shell.mobile .map-controls {
+    bottom: auto;
+    top: 68px;
+  }
+
+  .app-shell.mobile .search-box {
+    left: 12px;
+    right: 12px;
+    /* The desktop rule centres via translateX(-50%); left/right alone would
+       leave that shift in place and push the box off the left edge. */
+    transform: none;
+    width: auto;
+    max-width: none;
+  }
+
+  .app-shell.mobile .offline-banner,
+  .app-shell.mobile .map-location-error {
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: none;
+  }
+
+  /* ---- Touch targets: 44px minimum ---- */
+  .region-select,
+  .region-add-btn {
+    height: 44px;
+  }
+
+  .settings-menu-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .category-chip {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+
+  .category-filter-all,
+  .trip-manage-row button {
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+
+  .place-item {
+    padding: 6px 8px;
+  }
+
+  /* The place name is the row's primary tap target, so it carries the row
+     height rather than being a 20px sliver of text. */
+  .place-main {
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .place-controls button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .trip-chip-row .chip {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+
+  .day-title-btn,
+  .category-name-btn {
+    min-height: 38px;
+    padding: 8px 10px;
+  }
+
+  .sheet-grabber {
+    padding: 14px 0 10px;
+  }
+
+  .drag-handle {
+    padding: 8px 6px;
+    font-size: 16px;
+  }
+
+  .place-day-select {
+    width: 46px;
+    min-height: 34px;
+  }
+
+  .place-time-btn {
+    min-height: 34px;
+  }
+
+  .category-collapse-btn {
+    width: 26px;
+    min-height: 34px;
+  }
+
+  .day-count-control button {
+    width: 32px;
+    height: 32px;
+  }
+
+  .group-mode-toggle button {
+    min-height: 36px;
+    padding: 8px 14px;
+  }
+
+  .map-control-btn {
+    width: 46px;
+    height: 46px;
+  }
+
+  /* Popups must fit the screen, not a desktop column. */
+  .quick-add {
+    min-width: 0;
+    width: min(75vw, 320px);
+  }
+
+  .popup-content {
+    min-width: 0;
+    width: min(70vw, 280px);
+  }
+
+  .route-picker {
+    min-width: 0;
+    width: min(70vw, 260px);
+  }
+
+  .place-form {
+    max-height: 88vh;
+    overflow-y: auto;
+  }
+}
+
+/* A dragged row and its landing zone, for both mouse and touch. */
+.place-item.dragging {
+  opacity: 0.4;
+}
+
+.place-item.drop-target {
+  box-shadow: inset 0 2px 0 var(--accent, #2563eb);
+}
+
+.region-group.drop-target {
+  outline: 2px dashed var(--accent, #2563eb);
+  outline-offset: -2px;
+  border-radius: 8px;
+}

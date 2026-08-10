@@ -3,6 +3,7 @@ import { ThemeToggle } from './ThemeToggle'
 import { IconSizeControl } from './IconSizeControl'
 import { FadedOpacityControl } from './FadedOpacityControl'
 import { AiStatusControl } from './AiStatusControl'
+import { AccountControl } from './AccountControl'
 
 export function SettingsMenu() {
   const [open, setOpen] = useState(false)
@@ -43,6 +44,9 @@ export function SettingsMenu() {
           </div>
           <div className="settings-menu-section">
             <AiStatusControl />
+          </div>
+          <div className="settings-menu-section">
+            <AccountControl />
           </div>
         </div>
       )}

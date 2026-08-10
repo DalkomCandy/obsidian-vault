@@ -24,6 +24,22 @@ export const supabase = client
 export const isSupabaseConfigured = client !== null
 export const supabaseInitError = initError
 
-// The whole app's data is stored as one JSON blob in one row, keyed by this
-// id. Simple to sync, plenty for a single-user personal travel planner.
-export const APP_STATE_ROW_ID = 'default'
+/**
+ * Turns Supabase's English auth errors into something readable, since these
+ * are shown directly to the person trying to sign in.
+ */
+export function authErrorMessage(raw: string): string {
+  const text = raw.toLowerCase()
+  if (text.includes('invalid login credentials')) return '이메일 또는 비밀번호가 맞지 않아요.'
+  if (text.includes('email not confirmed')) {
+    return '이메일 인증이 아직 안 됐어요. 받은 메일의 링크를 눌러주세요. (메일이 안 오면 Supabase 설정에서 이메일 확인을 꺼도 됩니다)'
+  }
+  if (text.includes('user already registered')) return '이미 가입된 이메일이에요. 로그인해주세요.'
+  if (text.includes('password should be at least')) return '비밀번호는 6자 이상이어야 해요.'
+  if (text.includes('unable to validate email')) return '이메일 형식을 확인해주세요.'
+  if (text.includes('rate limit') || text.includes('too many')) {
+    return '시도가 너무 잦아요. 잠시 후 다시 해주세요.'
+  }
+  if (text.includes('failed to fetch')) return 'Supabase에 연결하지 못했어요. 네트워크와 주소 설정을 확인해주세요.'
+  return raw
+}

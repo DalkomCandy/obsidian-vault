@@ -1,5 +1,5 @@
 import { usePlaceStore } from './usePlaceStore'
-import { supabase, isSupabaseConfigured, APP_STATE_ROW_ID } from '../lib/supabase'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import type { CategoryStyle } from '../types'
 import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE } from '../types'
 import { dedupePlaces } from '../lib/dedupePlaces'
@@ -28,21 +28,43 @@ function snapshot(): SyncableState {
 let syncTimer: ReturnType<typeof setTimeout> | undefined
 let applyingRemote = false
 
+/**
+ * The signed-in user's id, which is also the primary key of their row.
+ * Null means "not signed in" -- the app then runs purely on localStorage and
+ * never touches the network, which is a supported way to use it, not an error.
+ */
+let currentUserId: string | null = null
+
 async function pushNow() {
-  if (!supabase) return
+  if (!supabase || !currentUserId) return
   try {
-    await supabase
+    const { error } = await supabase
       .from('app_state')
-      .upsert({ id: APP_STATE_ROW_ID, data: snapshot(), updated_at: new Date().toISOString() })
+      .upsert({ user_id: currentUserId, data: snapshot(), updated_at: new Date().toISOString() })
+    if (error) throw error
   } catch (err) {
     console.error('[supabase] 동기화 실패 (네트워크 확인 필요). 로컬 저장은 정상입니다.', err)
   }
 }
 
 function scheduleSync() {
-  if (!isSupabaseConfigured || !supabase || applyingRemote) return
+  if (!isSupabaseConfigured || !supabase || !currentUserId || applyingRemote) return
   clearTimeout(syncTimer)
   syncTimer = setTimeout(pushNow, 800)
+}
+
+/**
+ * Point sync at a signed-in user (or at nobody on sign-out).
+ *
+ * On sign-out the local data is deliberately left in place: it's this
+ * device's own copy, and wiping the screen because a session expired would
+ * look like data loss mid-trip.
+ */
+export function setSyncUser(userId: string | null): void {
+  if (currentUserId === userId) return
+  clearTimeout(syncTimer)
+  currentUserId = userId
+  if (userId) void loadRemoteState()
 }
 
 /**
@@ -111,14 +133,23 @@ export function loadRemoteState(): Promise<void> {
 }
 
 async function loadRemoteStateOnce(): Promise<void> {
-  if (!isSupabaseConfigured || !supabase) return
+  if (!isSupabaseConfigured || !supabase || !currentUserId) return
   try {
     const { data, error } = await supabase
       .from('app_state')
       .select('data')
-      .eq('id', APP_STATE_ROW_ID)
+      .eq('user_id', currentUserId)
       .maybeSingle()
-    if (error || !data?.data) return
+    if (error) {
+      console.error('[supabase] 원격 데이터를 불러오지 못했어요.', error)
+      return
+    }
+    // No row yet -- first sign-in on a fresh account. Push this device's
+    // local data up so the account starts out holding it.
+    if (!data?.data) {
+      await pushNow()
+      return
+    }
 
     const remote = data.data as Partial<SyncableState>
     const current = usePlaceStore.getState()
@@ -168,6 +199,7 @@ async function loadRemoteStateOnce(): Promise<void> {
 
 if (isSupabaseConfigured) {
   usePlaceStore.subscribe((state, prev) => {
+    if (!currentUserId) return
     if (
       state.trips !== prev.trips ||
       state.places !== prev.places ||

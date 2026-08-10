@@ -1950,3 +1950,95 @@
   outline-offset: -2px;
   border-radius: 8px;
 }
+
+/* ---------- Account / sync sign-in ---------- */
+
+.account-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-hint {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.account-email {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.account-input {
+  font: inherit;
+  font-size: 12px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-btn {
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11.5px;
+}
+
+.account-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
+}
+
+.account-btn.link {
+  border: none;
+  background: none;
+  color: var(--accent);
+  padding: 6px 2px;
+}
+
+.account-btn:disabled {
+  opacity: 0.6;
+}
+
+.account-error,
+.account-notice {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.account-error {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.account-notice {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+@media (max-width: 767px) {
+  .account-input,
+  .account-btn {
+    min-height: 40px;
+  }
+}

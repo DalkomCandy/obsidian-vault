@@ -52,40 +52,54 @@ API 키가 설정되지 않으면 앱 실행 시 안내 화면이 표시됩니�
 
 ## Supabase로 기기 간 동기화 설정 (선택)
 
-이 앱은 기본적으로 브라우저의 `localStorage`에만 데이터를 저장합니다. 여러 기기(예: 회사 컴퓨터의 Codespaces + 휴대폰)에서 같은 데이터를 보고 싶다면 Supabase를 연결하세요. 개인용으로 혼자 쓰는 걸 전제로 한 가장 간단한 설정입니다.
+이 앱은 기본적으로 브라우저의 `localStorage`에만 데이터를 저장합니다. 여러 기기(예: 컴퓨터 + 휴대폰)에서 같은 데이터를 보고 싶다면 Supabase를 연결하세요. **로그인한 본인만 자기 데이터를 읽고 쓸 수 있도록** 설정합니다.
 
 1. [supabase.com](https://supabase.com)에서 무료 계정으로 새 프로젝트를 만듭니다.
-2. 프로젝트의 **SQL Editor**에서 아래 스크립트를 실행해 테이블을 만듭니다.
+2. 프로젝트의 **SQL Editor**에서 아래 스크립트를 실행합니다.
 
    ```sql
+   -- 예전(익명 공개) 버전을 이미 만들었다면 먼저 지우세요.
+   -- 로컬에 있는 데이터는 로그인하면 다시 올라가므로 사라지지 않습니다.
+   drop table if exists app_state;
+
    create table app_state (
-     id text primary key,
+     user_id uuid primary key references auth.users on delete cascade,
      data jsonb not null,
      updated_at timestamptz not null default now()
    );
 
    alter table app_state enable row level security;
 
-   -- 개인용 앱이라 익명(anon) 키로 전체 읽기/쓰기를 허용합니다.
-   create policy "allow anon read" on app_state
-     for select using (true);
-   create policy "allow anon write" on app_state
-     for insert with check (true);
-   create policy "allow anon update" on app_state
-     for update using (true);
+   -- 로그인한 사용자가 "자기 행"에만 접근할 수 있게 제한합니다.
+   -- auth.uid()는 요청을 보낸 로그인 사용자의 id라 위조할 수 없습니다.
+   create policy "read own row" on app_state
+     for select using (auth.uid() = user_id);
+
+   create policy "insert own row" on app_state
+     for insert with check (auth.uid() = user_id);
+
+   -- update에 with check까지 있어야 남의 행으로 바꿔치기하는 것도 막힙니다.
+   create policy "update own row" on app_state
+     for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
    ```
 
-3. **Project Settings > API**에서 `Project URL`과 `anon public` 키를 복사합니다.
-4. `.env`에 아래 두 값을 추가합니다.
+3. **Authentication > Sign In / Providers**에서 **Email**이 켜져 있는지 확인합니다. 혼자 쓰는 앱이라면 같은 화면의 **Confirm email**을 꺼두면 가입 직후 바로 로그인돼서 편합니다. (켜두면 가입 후 메일의 링크를 한 번 눌러야 합니다.)
+4. **Project Settings > API**에서 `Project URL`과 `anon public` 키를 복사합니다.
+5. `.env`(또는 배포용 GitHub 시크릿)에 아래 두 값을 추가합니다.
 
    ```
    VITE_SUPABASE_URL=your_project_url
    VITE_SUPABASE_ANON_KEY=your_anon_key
    ```
 
-5. 앱을 다시 시작하면 자동으로 연결됩니다. 데이터를 바꿀 때마다 자동으로 Supabase에 저장되고, 다른 기기에서 앱을 열면 저장된 최신 데이터를 불러옵니다.
+6. 앱의 **설정(⚙️) → 기기 간 동기화**에서 이메일·비밀번호로 가입하고 로그인합니다. 다른 기기에서도 같은 계정으로 로그인하면 이어집니다.
 
-두 값을 비워두면 이 기능은 완전히 비활성화되고 기존처럼 `localStorage`만 사용합니다.
+### 알아둘 점
+
+- **로그인은 선택입니다.** 로그인하지 않아도 앱은 그대로 동작하고, 그 기기의 `localStorage`에만 저장됩니다. 로그인은 "Supabase에 보관되는 사본을 내 계정에만 묶는" 역할이에요.
+- **로그아웃해도 이 기기의 데이터는 지워지지 않습니다.** 세션이 만료됐다고 화면이 비면 여행 중에 데이터가 날아간 것처럼 보이니, 동기화만 멈추고 로컬 데이터는 그대로 둡니다.
+- **처음 로그인할 때 데이터가 있는 기기에서 하세요.** 계정에 아직 행이 없으면 그 기기의 로컬 데이터를 그대로 올려서 시작합니다. 이후로는 양쪽을 합치는 방식이라 한쪽이 다른 쪽을 덮어쓰지 않습니다.
+- `anon public` 키는 브라우저에 노출되는 게 정상입니다. 이 키만으로는 아무것도 못 하고, 실제 접근 권한은 위의 RLS 정책과 로그인 세션이 결정합니다.
 
 ## 로컬 AI로 장소 정리하기 (선택)
 
@@ -127,10 +141,7 @@ Codespaces 주소는 개발용이라 일정 시간 뒤 자동으로 꺼지고 �
 배포하면 빌드된 JavaScript를 누구나 내려받아 볼 수 있습니다. 브라우저에서 도는 앱은 원래 그런 구조라, 아래 두 가지는 **키를 숨기는 게 아니라 키가 할 수 있는 일을 제한**해서 막아야 합니다.
 
 - **구글 지도 키에 반드시 사용 제한을 거세요.** 제한이 없으면 다른 사람이 키를 가져다 써서 요금이 청구될 수 있습니다. Cloud Console → 사용자 인증 정보 → 해당 키 → *애플리케이션 제한사항* 을 **HTTP 리퍼러**로 두고 `https://<사용자명>.github.io/obsidian-vault/*` 만 허용하세요.
-- **Supabase를 연결했다면 지금 설정으로는 데이터가 공개 상태입니다.** 위 설정 안내의 정책은 익명 키로 전체 읽기/쓰기를 허용하는데, Codespaces에서는 주소 자체가 로그인으로 막혀 있어 문제가 없었지만 공개 주소로 배포하면 사이트를 찾은 사람이 여행 계획을 읽거나 고칠 수 있습니다. 셋 중 하나를 고르세요.
-  - 여행 계획 정도는 공개돼도 괜찮다 → 그대로 두기
-  - 배포판에서는 동기화를 끄기 → Supabase 시크릿 두 개를 등록하지 않으면 됩니다 (그 기기에서는 `localStorage`만 사용)
-  - 제대로 막기 → Supabase Auth(이메일 로그인)를 붙이고 RLS 정책을 로그인한 사용자로 좁히기
+- **Supabase는 로그인한 본인만 접근할 수 있게 막혀 있습니다.** 위 "Supabase로 기기 간 동기화 설정"의 SQL을 그대로 실행했는지 확인하세요. 예전의 익명 공개 정책을 아직 쓰고 있다면 사이트를 찾은 사람이 여행 계획을 읽거나 고칠 수 있습니다.
 
 ## 홈 화면에 추가하기 (PWA)
 

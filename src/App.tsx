@@ -8,7 +8,8 @@ import type { DraftLocation } from './components/QuickAddMarker'
 import type { RouteOption } from './components/RouteModePicker'
 import { usePlaceStore } from './store/usePlaceStore'
 import { GOOGLE_MAPS_API_KEY } from './lib/googleMaps'
-import { loadRemoteState } from './store/sync'
+import { setSyncUser } from './store/sync'
+import { useSupabaseAuth } from './hooks/useSupabaseAuth'
 import { useOnlineStatus } from './hooks/useOnlineStatus'
 import { useIsMobile } from './hooks/useMediaQuery'
 import {
@@ -71,9 +72,12 @@ function App() {
   // between a peek (map-first), half, and near-full (list-first).
   const [sheetSnap, setSheetSnap] = useState<'peek' | 'half' | 'full'>('half')
 
+  // Sync follows the session: data lands in the signed-in account's own row,
+  // and signing out simply stops syncing without touching what's stored here.
+  const { session } = useSupabaseAuth()
   useEffect(() => {
-    loadRemoteState()
-  }, [])
+    setSyncUser(session?.user.id ?? null)
+  }, [session])
 
   const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 

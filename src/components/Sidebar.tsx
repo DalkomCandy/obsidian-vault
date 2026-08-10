@@ -55,7 +55,7 @@ export function Sidebar({
   onSheetSnapChange,
   onFocusFromSheet,
 }: SidebarProps) {
-  const removePlace = usePlaceStore((s) => s.removePlace)
+  const deletePlaceWithUndo = usePlaceStore((s) => s.deletePlaceWithUndo)
   const movePlace = usePlaceStore((s) => s.movePlace)
   const setPlaceCategory = usePlaceStore((s) => s.setPlaceCategory)
   const setPlaceDay = usePlaceStore((s) => s.setPlaceDay)
@@ -270,12 +270,7 @@ export function Sidebar({
         <button title="수정" onClick={() => onEditPlace(place)}>
           ✎
         </button>
-        <button
-          title="삭제"
-          onClick={() => {
-            if (confirm(`"${place.name}"을(를) 삭제할까요?`)) removePlace(place.id)
-          }}
-        >
+        <button title="삭제" onClick={() => deletePlaceWithUndo(place.id)}>
           ✕
         </button>
       </div>

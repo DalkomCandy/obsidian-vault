@@ -212,6 +212,18 @@ export function formatDistance(totalMeters: number): string {
  * want standing on a street corner -- and on mobile this hands off to the
  * installed Google Maps app rather than the web page.
  */
+/**
+ * Opens the place itself in Google Maps (not directions to it) -- for
+ * looking the spot up, checking hours/reviews, or sharing it. Coordinates
+ * always work here, unlike a name-based query which can match the wrong
+ * branch of a chain; a saved place has no stored Google place id to link to
+ * more precisely once it's been imported from KML or typed in by hand.
+ */
+export function googleMapsViewUrl(place: { lat: number; lng: number }): string {
+  const params = new URLSearchParams({ api: '1', query: `${place.lat},${place.lng}` })
+  return `https://www.google.com/maps/search/?${params.toString()}`
+}
+
 export function googleMapsNavigationUrl(
   destination: { lat: number; lng: number },
   mode: TravelMode = 'WALKING',

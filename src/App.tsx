@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { APIProvider } from '@vis.gl/react-google-maps'
 import { MapView } from './components/MapView'
 import { Sidebar } from './components/Sidebar'
+import { DeleteUndoToast } from './components/DeleteUndoToast'
 import { PlaceForm, draftFromPlace, type PlaceDraft } from './components/PlaceForm'
 import type { SearchResult } from './components/SearchBox'
 import type { DraftLocation } from './components/QuickAddMarker'
@@ -336,6 +337,7 @@ function App() {
         {editDraft && (
           <PlaceForm draft={editDraft} onSave={handleSaveEdit} onCancel={() => setEditDraft(null)} />
         )}
+        <DeleteUndoToast />
       </div>
     </APIProvider>
   )

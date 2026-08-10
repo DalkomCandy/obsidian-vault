@@ -20,6 +20,9 @@ const ICON_SCALE_KEY = 'travel-map.iconScale'
 const DEFAULT_ICON_SCALE = 1
 const FADED_OPACITY_KEY = 'travel-map.fadedOpacity'
 const DEFAULT_FADED_OPACITY = 0.38
+const UNDO_DELETE_WINDOW_MS = 6000
+
+let undoDeleteTimer: ReturnType<typeof setTimeout> | undefined
 
 interface LegacyPlace {
   id: string
@@ -233,6 +236,8 @@ interface PlaceStore {
   focusedDay: number | null
   iconScale: number
   fadedOpacity: number
+  /** The most recently soft-deleted place (and its routes), while its undo window is open. */
+  lastDeleted: { place: Place; routes: SavedRoute[] } | null
 
   addTrip: (region: string, name: string) => Trip
   renameTrip: (id: string, name: string) => void
@@ -240,6 +245,9 @@ interface PlaceStore {
   addPlace: (place: Omit<Place, 'id' | 'createdAt'>) => void
   updatePlace: (id: string, patch: Partial<Place>) => void
   removePlace: (id: string) => void
+  /** Removes the place immediately but keeps it (plus its routes) recoverable via undoDeletePlace for a few seconds. */
+  deletePlaceWithUndo: (id: string) => void
+  undoDeletePlace: () => void
   movePlace: (draggedId: string, targetId: string, align?: 'category' | 'day') => void
   setPlaceCategory: (id: string, category: Category) => void
   copyPlacesToTrip: (placeIds: string[], targetTripId: string) => number
@@ -289,6 +297,7 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   focusedDay: null,
   iconScale: loadIconScale(),
   fadedOpacity: loadFadedOpacity(),
+  lastDeleted: null,
 
   addTrip: (region, name) => {
     const trip: Trip = {
@@ -347,6 +356,30 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     // A saved route is only meaningful while both of its endpoints exist.
     const routes = get().routes.filter((r) => r.originId !== id && r.destinationId !== id)
     set({ places, routes })
+    persistPlaces(places)
+    persistRoutes(routes)
+  },
+
+  deletePlaceWithUndo: (id) => {
+    const place = get().places.find((p) => p.id === id)
+    if (!place) return
+    const removedRoutes = get().routes.filter((r) => r.originId === id || r.destinationId === id)
+    get().removePlace(id)
+    set({ lastDeleted: { place, routes: removedRoutes } })
+    clearTimeout(undoDeleteTimer)
+    undoDeleteTimer = setTimeout(() => {
+      // Only clears if a newer delete hasn't already replaced this one.
+      if (get().lastDeleted?.place.id === id) set({ lastDeleted: null })
+    }, UNDO_DELETE_WINDOW_MS)
+  },
+
+  undoDeletePlace: () => {
+    const pending = get().lastDeleted
+    if (!pending) return
+    clearTimeout(undoDeleteTimer)
+    const places = [...get().places, pending.place]
+    const routes = [...get().routes, ...pending.routes]
+    set({ places, routes, lastDeleted: null })
     persistPlaces(places)
     persistRoutes(routes)
   },

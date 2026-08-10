@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useMap } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
 
@@ -27,6 +27,17 @@ export function MapController({ focusPlace, fitPlaces, mapPadding }: MapControll
     recentreForPadding(map, mapPadding)
   }, [map, focusPlace, mapPadding])
 
+  // App.tsx recomputes the sidebarPlaces/fitPlaces array (a new reference)
+  // on every places change, including ones that don't touch which places are
+  // shown or where -- editing a memo, appending a route summary, an AI
+  // rewrite. Keying the effect on this instead of the array reference means
+  // it only re-fits when the actual visible set or its coordinates change,
+  // not every time unrelated place data is edited.
+  const fitKey = useMemo(
+    () => (fitPlaces ? fitPlaces.map((p) => `${p.id}:${p.lat}:${p.lng}`).join('|') : ''),
+    [fitPlaces],
+  )
+
   useEffect(() => {
     if (!map || !fitPlaces || fitPlaces.length === 0) return
     if (fitPlaces.length === 1) {
@@ -46,7 +57,10 @@ export function MapController({ focusPlace, fitPlaces, mapPadding }: MapControll
       left: BASE_PADDING,
       right: BASE_PADDING,
     })
-  }, [map, fitPlaces, mapPadding])
+    // fitKey is the real dependency (see comment above); fitPlaces itself is
+    // read fresh inside the effect each time it does run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, fitKey, mapPadding])
 
   return null
 }

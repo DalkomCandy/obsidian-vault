@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
-import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE, googleMapsNavigationUrl } from '../types'
+import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE, googleMapsNavigationUrl, googleMapsViewUrl } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { PlacePin } from './PlacePin'
 import { PopupClose } from './PopupClose'
@@ -30,7 +30,7 @@ export function PlaceMarker({
   onRouteFrom,
 }: PlaceMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
-  const removePlace = usePlaceStore((s) => s.removePlace)
+  const deletePlaceWithUndo = usePlaceStore((s) => s.deletePlaceWithUndo)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
@@ -74,7 +74,15 @@ export function PlaceMarker({
         <InfoWindow anchor={marker} headerDisabled onCloseClick={() => onOpenChange(false)}>
           <div className="popup-content">
             <PopupClose onClick={() => onOpenChange(false)} />
-            <div className="popup-title">{place.name}</div>
+            <a
+              className="popup-title popup-title-link"
+              href={googleMapsViewUrl(place)}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Google 지도에서 보기"
+            >
+              {place.name}
+            </a>
             <div className="popup-meta">
               {place.time && <span className="popup-time">{place.time}</span>}
               {categoryLabels[place.category] ?? FALLBACK_CATEGORY_LABEL}
@@ -114,7 +122,8 @@ export function PlaceMarker({
               <button
                 className="danger"
                 onClick={() => {
-                  if (confirm(`"${place.name}"을(를) 삭제할까요?`)) removePlace(place.id)
+                  onOpenChange(false)
+                  deletePlaceWithUndo(place.id)
                 }}
               >
                 삭제

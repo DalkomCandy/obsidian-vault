@@ -109,6 +109,29 @@ API 키가 설정되지 않으면 앱 실행 시 안내 화면이 표시됩니�
 
 주의: Codespaces처럼 브라우저와 앱이 서로 다른 컴퓨터에서 돌아가는 구조라면, `localhost`는 항상 **브라우저가 실행 중인 기기**를 가리킵니다. 즉 Ollama도 그 브라우저와 같은 컴퓨터에서 돌고 있어야 연결됩니다.
 
+## 배포하기 (휴대폰에서 앱처럼 쓰기)
+
+Codespaces 주소는 개발용이라 일정 시간 뒤 자동으로 꺼지고 접속할 때마다 GitHub 로그인이 필요합니다. 이 앱은 서버가 필요 없는 정적 사이트라 한 번 배포해두면 고정된 주소로 아무 때나 열 수 있어요. `.github/workflows/deploy.yml`이 이미 들어 있어서 아래 두 가지만 하면 됩니다.
+
+1. **저장소 시크릿 등록** — GitHub 저장소 → Settings → Secrets and variables → Actions → *New repository secret*
+   - `VITE_GOOGLE_MAPS_API_KEY` (필수)
+   - `VITE_GOOGLE_MAPS_MAP_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (쓰고 있다면 함께)
+2. **Pages 켜기** — Settings → Pages → *Source* 를 **GitHub Actions** 로 변경
+
+이후 기본 브랜치에 푸시할 때마다 자동으로 다시 배포되고, 주소는 `https://<사용자명>.github.io/obsidian-vault/` 입니다. 휴대폰에서 이 주소를 열고 "홈 화면에 추가"하면 앱 아이콘이 생깁니다.
+
+> 다른 호스팅(Vercel·Netlify 등)으로 옮기려면 `VITE_BASE_PATH` 없이 빌드하면 됩니다. 기본값이 `/` 라 루트 배포에 그대로 맞습니다.
+
+### 배포 전에 꼭 확인할 것 (중요)
+
+배포하면 빌드된 JavaScript를 누구나 내려받아 볼 수 있습니다. 브라우저에서 도는 앱은 원래 그런 구조라, 아래 두 가지는 **키를 숨기는 게 아니라 키가 할 수 있는 일을 제한**해서 막아야 합니다.
+
+- **구글 지도 키에 반드시 사용 제한을 거세요.** 제한이 없으면 다른 사람이 키를 가져다 써서 요금이 청구될 수 있습니다. Cloud Console → 사용자 인증 정보 → 해당 키 → *애플리케이션 제한사항* 을 **HTTP 리퍼러**로 두고 `https://<사용자명>.github.io/obsidian-vault/*` 만 허용하세요.
+- **Supabase를 연결했다면 지금 설정으로는 데이터가 공개 상태입니다.** 위 설정 안내의 정책은 익명 키로 전체 읽기/쓰기를 허용하는데, Codespaces에서는 주소 자체가 로그인으로 막혀 있어 문제가 없었지만 공개 주소로 배포하면 사이트를 찾은 사람이 여행 계획을 읽거나 고칠 수 있습니다. 셋 중 하나를 고르세요.
+  - 여행 계획 정도는 공개돼도 괜찮다 → 그대로 두기
+  - 배포판에서는 동기화를 끄기 → Supabase 시크릿 두 개를 등록하지 않으면 됩니다 (그 기기에서는 `localStorage`만 사용)
+  - 제대로 막기 → Supabase Auth(이메일 로그인)를 붙이고 RLS 정책을 로그인한 사용자로 좁히기
+
 ## 홈 화면에 추가하기 (PWA)
 
 이 앱은 PWA(Progressive Web App)라 브라우저 주소창 없이 아이콘을 눌러 여는 앱처럼 설치할 수 있습니다.

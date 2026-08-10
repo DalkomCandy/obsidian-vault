@@ -2,11 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from './ThemeToggle'
 import { IconSizeControl } from './IconSizeControl'
 import { FadedOpacityControl } from './FadedOpacityControl'
-import { DefaultShapeControl } from './DefaultShapeControl'
+import { LocationControl } from './LocationControl'
 import { DiagnosticsPanel } from './DiagnosticsPanel'
 import { AccountControl } from './AccountControl'
+import type { LocationStatus } from '../hooks/useCurrentLocation'
 
-export function SettingsMenu() {
+interface SettingsMenuProps {
+  locationActive: boolean
+  locationStatus: LocationStatus
+  onToggleLocation: () => void
+}
+
+export function SettingsMenu({ locationActive, locationStatus, onToggleLocation }: SettingsMenuProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -44,7 +51,7 @@ export function SettingsMenu() {
             <FadedOpacityControl />
           </div>
           <div className="settings-menu-section">
-            <DefaultShapeControl />
+            <LocationControl active={locationActive} status={locationStatus} onToggle={onToggleLocation} />
           </div>
           <div className="settings-menu-section">
             <AccountControl />

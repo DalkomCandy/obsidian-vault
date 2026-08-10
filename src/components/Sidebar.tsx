@@ -76,7 +76,6 @@ export function Sidebar({
   const addCategory = usePlaceStore((s) => s.addCategory)
   const renameCategory = usePlaceStore((s) => s.renameCategory)
   const removeCategory = usePlaceStore((s) => s.removeCategory)
-  const defaultMarkerShape = usePlaceStore((s) => s.defaultMarkerShape)
 
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [renamingCategory, setRenamingCategory] = useState<Category | null>(null)
@@ -211,7 +210,7 @@ export function Sidebar({
 
   const handleAddCategory = () => {
     const name = nextEmptyCategoryName(Object.values(categoryLabels))
-    const id = addCategory(name, { ...NEW_CATEGORY_STYLE, shape: defaultMarkerShape })
+    const id = addCategory(name, NEW_CATEGORY_STYLE)
     setRenamingCategory(id)
     setRenameDraft(name)
   }

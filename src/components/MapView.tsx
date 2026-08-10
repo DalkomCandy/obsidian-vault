@@ -12,7 +12,6 @@ import { RouteModePicker, type RouteOption } from './RouteModePicker'
 import { RouteLine } from './RouteLine'
 import { CurrentLocationMarker } from './CurrentLocationMarker'
 import { useCurrentLocation } from '../hooks/useCurrentLocation'
-import { RegionPicker } from './RegionPicker'
 import { SettingsMenu } from './SettingsMenu'
 import { TripMenu } from './TripMenu'
 import { CategoryFilter } from './CategoryFilter'
@@ -186,10 +185,16 @@ export function MapView({
   return (
     <>
       <div className="map-topbar">
-        <RegionPicker variant="floating" />
         <SearchBox onPlaceSelected={onLocationPicked} />
         <TripMenu />
-        <SettingsMenu />
+        <SettingsMenu
+          locationActive={locationActive}
+          locationStatus={status}
+          onToggleLocation={() => {
+            if (!locationActive) setPendingRecenter(true)
+            toggleLocation()
+          }}
+        />
       </div>
       <CategoryFilter compact />
       {locationError && <div className="map-location-error">{locationError}</div>}
@@ -252,21 +257,14 @@ export function MapView({
 
       {/* Sibling of <Map>, not a child: if the Maps API fails to load (which
           is exactly what happens offline) the map renders nothing, and
-          controls nested inside it would disappear along with it. */}
-      <div className="map-controls">
-        <button
-          type="button"
-          className={locationActive ? 'map-control-btn active' : 'map-control-btn'}
-          title={locationActive ? '위치 추적 끄기' : '현재 위치 표시'}
-          onClick={() => {
-            if (!locationActive) setPendingRecenter(true)
-            toggleLocation()
-          }}
-        >
-          {status === 'locating' ? <span className="btn-spinner" /> : '📍'}
-        </button>
-        {location && locationActive && <RecenterButton lat={location.lat} lng={location.lng} />}
-      </div>
+          controls nested inside it would disappear along with it. The
+          location toggle itself lives in the settings panel now -- this
+          only recentres once tracking is already on. */}
+      {location && locationActive && (
+        <div className="map-controls">
+          <RecenterButton lat={location.lat} lng={location.lng} />
+        </div>
+      )}
     </>
   )
 }

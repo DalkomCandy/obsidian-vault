@@ -1,12 +1,11 @@
 import { create } from 'zustand'
-import type { Category, CategoryStyle, MarkerShape, Place, SavedRoute, Trip } from '../types'
+import type { Category, CategoryStyle, Place, SavedRoute, Trip } from '../types'
 import {
   DEFAULT_CATEGORY_LABELS,
   DEFAULT_CATEGORY_ORDER,
   DEFAULT_CATEGORY_STYLES,
   FALLBACK_CATEGORY_LABEL,
   FALLBACK_CATEGORY_STYLE,
-  MARKER_SHAPES,
   MAX_DAY_COUNT,
   formatTripLabel,
   todayDateString,
@@ -21,8 +20,6 @@ const ICON_SCALE_KEY = 'travel-map.iconScale'
 const DEFAULT_ICON_SCALE = 1
 const FADED_OPACITY_KEY = 'travel-map.fadedOpacity'
 const DEFAULT_FADED_OPACITY = 0.38
-const DEFAULT_SHAPE_KEY = 'travel-map.defaultMarkerShape'
-const DEFAULT_MARKER_SHAPE: MarkerShape = 'circle'
 
 interface LegacyPlace {
   id: string
@@ -204,11 +201,6 @@ function loadFadedOpacity(): number {
   return Number.isFinite(stored) && stored > 0 && stored <= 1 ? stored : DEFAULT_FADED_OPACITY
 }
 
-function loadDefaultMarkerShape(): MarkerShape {
-  const stored = localStorage.getItem(DEFAULT_SHAPE_KEY)
-  return (MARKER_SHAPES as string[]).includes(stored ?? '') ? (stored as MarkerShape) : DEFAULT_MARKER_SHAPE
-}
-
 /**
  * Every category defaults to visible; only an explicit toggle-off should
  * hide one. Deriving `selectedCategories` from `categoryOrder` minus this
@@ -241,7 +233,6 @@ interface PlaceStore {
   focusedDay: number | null
   iconScale: number
   fadedOpacity: number
-  defaultMarkerShape: MarkerShape
 
   addTrip: (region: string, name: string) => Trip
   renameTrip: (id: string, name: string) => void
@@ -269,7 +260,6 @@ interface PlaceStore {
   removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
   setFadedOpacity: (opacity: number) => void
-  setDefaultMarkerShape: (shape: MarkerShape) => void
   hydrate: (data: {
     trips: Trip[]
     places: Place[]
@@ -299,7 +289,6 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   focusedDay: null,
   iconScale: loadIconScale(),
   fadedOpacity: loadFadedOpacity(),
-  defaultMarkerShape: loadDefaultMarkerShape(),
 
   addTrip: (region, name) => {
     const trip: Trip = {
@@ -566,11 +555,6 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setFadedOpacity: (opacity) => {
     localStorage.setItem(FADED_OPACITY_KEY, String(opacity))
     set({ fadedOpacity: opacity })
-  },
-
-  setDefaultMarkerShape: (shape) => {
-    localStorage.setItem(DEFAULT_SHAPE_KEY, shape)
-    set({ defaultMarkerShape: shape })
   },
 
   // Applies externally-sourced data (e.g. a Supabase merge) AND persists it,

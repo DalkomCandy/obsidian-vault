@@ -3,9 +3,10 @@ import { usePlaceStore } from '../store/usePlaceStore'
 import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
 import { ImportPlacesDialog } from './ImportPlacesDialog'
 import { TripPicker } from './TripPicker'
+import { RegionPicker } from './RegionPicker'
 
-/** Floating-bar counterpart to SettingsMenu: trip switching/management
- * tucked behind an icon button instead of sitting inline above the place list. */
+/** Floating-bar counterpart to SettingsMenu: region + trip switching/management
+ * tucked behind an icon button instead of sitting inline in the top bar. */
 export function TripMenu() {
   const [open, setOpen] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -33,8 +34,6 @@ export function TripMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
-  if (!selectedRegion) return null
-
   const selectedTrip = trips.find((t) => t.id === selectedTripId) ?? null
 
   const handleExport = () => {
@@ -53,20 +52,23 @@ export function TripMenu() {
       </button>
       {open && (
         <div className="trip-menu-panel">
-          <TripPicker
-            region={selectedRegion}
-            trips={trips}
-            selectedTripId={selectedTripId}
-            onSelectTrip={setSelectedTripId}
-            onCreateTrip={(name) => {
-              const trip = addTrip(selectedRegion, name)
-              setSelectedTripId(trip.id)
-            }}
-            onRenameTrip={renameTrip}
-            onDeleteTrip={removeTrip}
-            onImportPlaces={() => setImporting(true)}
-            onExportTrip={handleExport}
-          />
+          <RegionPicker variant="floating" />
+          {selectedRegion && (
+            <TripPicker
+              region={selectedRegion}
+              trips={trips}
+              selectedTripId={selectedTripId}
+              onSelectTrip={setSelectedTripId}
+              onCreateTrip={(name) => {
+                const trip = addTrip(selectedRegion, name)
+                setSelectedTripId(trip.id)
+              }}
+              onRenameTrip={renameTrip}
+              onDeleteTrip={removeTrip}
+              onImportPlaces={() => setImporting(true)}
+              onExportTrip={handleExport}
+            />
+          )}
         </div>
       )}
       {importing && selectedTrip && (

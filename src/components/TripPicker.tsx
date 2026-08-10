@@ -11,6 +11,7 @@ interface TripPickerProps {
   onRenameTrip: (id: string, name: string) => void
   onDeleteTrip: (id: string) => void
   onImportPlaces: () => void
+  onImportKml: () => void
   onExportTrip: () => void
 }
 
@@ -23,6 +24,7 @@ export function TripPicker({
   onRenameTrip,
   onDeleteTrip,
   onImportPlaces,
+  onImportKml,
   onExportTrip,
 }: TripPickerProps) {
   const [creating, setCreating] = useState(false)
@@ -101,10 +103,13 @@ export function TripPicker({
             이름 수정
           </button>
           <button type="button" onClick={onImportPlaces} title="이 지역의 다른 여행에서 장소 복사해오기">
-            가져오기
+            다른 여행에서 가져오기
+          </button>
+          <button type="button" onClick={onImportKml} title="구글 내 지도 등에서 내보낸 .kml 파일 가져오기">
+            KML 파일 가져오기
           </button>
           <button type="button" onClick={onExportTrip} title="KML로 내보내기 (구글 내 지도에서 열 수 있어요)">
-            내보내기
+            KML로 내보내기
           </button>
           <button
             type="button"

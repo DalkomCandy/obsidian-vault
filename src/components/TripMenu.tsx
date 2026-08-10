@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
 import { ImportPlacesDialog } from './ImportPlacesDialog'
+import { ImportKmlDialog } from './ImportKmlDialog'
 import { TripPicker } from './TripPicker'
 import { RegionPicker } from './RegionPicker'
 
@@ -10,12 +11,15 @@ import { RegionPicker } from './RegionPicker'
 export function TripMenu() {
   const [open, setOpen] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [importingKml, setImportingKml] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   const trips = usePlaceStore((s) => s.trips)
   const places = usePlaceStore((s) => s.places)
   const routes = usePlaceStore((s) => s.routes)
+  const categoryOrder = usePlaceStore((s) => s.categoryOrder)
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
+  const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
   const selectedRegion = usePlaceStore((s) => s.selectedRegion)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const setSelectedTripId = usePlaceStore((s) => s.setSelectedTripId)
@@ -66,6 +70,7 @@ export function TripMenu() {
               onRenameTrip={renameTrip}
               onDeleteTrip={removeTrip}
               onImportPlaces={() => setImporting(true)}
+              onImportKml={() => setImportingKml(true)}
               onExportTrip={handleExport}
             />
           )}
@@ -78,6 +83,14 @@ export function TripMenu() {
           onImported={(count) =>
             alert(count > 0 ? `${count}개 장소를 가져왔어요.` : '가져올 새 장소가 없었어요 (이미 저장된 장소는 건너뜁니다).')
           }
+        />
+      )}
+      {importingKml && selectedTrip && (
+        <ImportKmlDialog
+          targetTripId={selectedTrip.id}
+          defaultCategory={activeAddCategory ?? categoryOrder[0]}
+          onClose={() => setImportingKml(false)}
+          onImported={(count) => alert(count > 0 ? `${count}개 장소를 가져왔어요.` : '가져온 장소가 없어요.')}
         />
       )}
     </div>

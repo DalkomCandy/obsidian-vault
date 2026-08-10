@@ -19,6 +19,7 @@ interface QuickAddMarkerProps {
   defaultCategory: Category
   onSave: (category: Category) => void
   onCancel: () => void
+  onNameChange: (name: string) => void
 }
 
 const NEUTRAL_COLOR = '#6b7280'
@@ -36,7 +37,7 @@ function StarRating({ rating }: { rating: number }) {
   )
 }
 
-export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: QuickAddMarkerProps) {
+export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel, onNameChange }: QuickAddMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
   const iconScale = usePlaceStore((s) => s.iconScale)
 
@@ -49,7 +50,12 @@ export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: Qui
         <InfoWindow anchor={marker} headerDisabled onCloseClick={onCancel}>
           <div className="quick-add">
             <PopupClose onClick={onCancel} />
-            <div className="quick-add-name">{draft.name || '(이름 없음)'}</div>
+            <input
+              className="quick-add-name-input"
+              value={draft.name}
+              onChange={(e) => onNameChange(e.target.value)}
+              placeholder="장소 이름을 입력하세요"
+            />
 
             {draft.rating != null && (
               <div className="quick-add-rating">
@@ -75,7 +81,12 @@ export function QuickAddMarker({ draft, defaultCategory, onSave, onCancel }: Qui
             )}
 
             <div className="quick-add-actions">
-              <button type="button" className="primary" onClick={() => onSave(defaultCategory)}>
+              <button
+                type="button"
+                className="primary"
+                disabled={!draft.name.trim()}
+                onClick={() => onSave(defaultCategory)}
+              >
                 저장
               </button>
             </div>

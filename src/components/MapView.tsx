@@ -49,6 +49,7 @@ interface MapViewProps {
   onEditPlace: (place: Place) => void
   onSaveDraft: (category: Category) => void
   onCancelDraft: () => void
+  onDraftNameChange: (name: string) => void
   routeOriginId: string | null
   onSetRouteOrigin: (place: Place | null) => void
   onRouteCommitted: (originName: string, destinationId: string, mode: TravelMode, option: RouteOption) => void
@@ -68,6 +69,7 @@ export function MapView({
   onEditPlace,
   onSaveDraft,
   onCancelDraft,
+  onDraftNameChange,
   routeOriginId,
   onSetRouteOrigin,
   onRouteCommitted,
@@ -125,7 +127,11 @@ export function MapView({
           userRatingCount: place.userRatingCount ?? undefined,
           googleMapsUri: place.googleMapsURI ?? undefined,
         })
-      } catch {
+      } catch (err) {
+        // Google's place lookup can fail for POIs it otherwise shows on the
+        // map (quota, transient network errors, ids it won't resolve) -- the
+        // popup lets the name be typed in by hand rather than getting stuck.
+        console.error('Failed to fetch place details', err)
         onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
       }
     },
@@ -219,6 +225,7 @@ export function MapView({
             defaultCategory={defaultAddCategory}
             onSave={onSaveDraft}
             onCancel={onCancelDraft}
+            onNameChange={onDraftNameChange}
           />
         )}
         {routeCandidate && (

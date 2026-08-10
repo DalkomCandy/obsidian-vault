@@ -327,6 +327,7 @@ function App() {
             onEditPlace={handleEditPlace}
             onSaveDraft={handleSaveDraft}
             onCancelDraft={() => setDraftLocation(null)}
+            onDraftNameChange={(name) => setDraftLocation((prev) => (prev ? { ...prev, name } : prev))}
             routeOriginId={routeOriginId}
             onSetRouteOrigin={handleSetRouteOrigin}
             onRouteCommitted={handleRouteCommitted}

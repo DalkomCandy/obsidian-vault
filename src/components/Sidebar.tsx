@@ -22,6 +22,8 @@ interface SidebarProps {
   places: Place[]
   onEditPlace: (place: Place) => void
   onFocusPlace: (place: Place) => void
+  /** Opens the travel-mode picker for a leg of the day's itinerary. */
+  onPickRoute: (from: Place, to: Place) => void
   /** Desktop only -- the mobile sheet is sized by snap point, not by width. */
   width?: number
   /** Non-null on phones, where the sidebar renders as a bottom sheet. */
@@ -51,6 +53,7 @@ export function Sidebar({
   places,
   onEditPlace,
   onFocusPlace,
+  onPickRoute,
   width,
   sheetSnap,
   onSheetSnapChange,
@@ -278,12 +281,21 @@ export function Sidebar({
     </li>
   )
 
-  // A saved route between two consecutive stops in the day's order shows up
-  // as its own small row between them -- silent (no row at all) if that leg
-  // was never checked, since day-summary already surfaces "N구간 미확인".
+  // The gap between two consecutive stops in the day's order. Once a route
+  // is saved it shows the mode/duration; until then it's the button that
+  // creates it -- the order is already decided here, so picking the two ends
+  // off the map by hand (the popup's "경로 그리기") is the long way round.
   const renderLegRow = (from: Place, to: Place) => {
     const route = routeByPair.get(`${from.id}->${to.id}`) ?? routeByPair.get(`${to.id}->${from.id}`)
-    if (!route) return null
+    if (!route) {
+      return (
+        <li key={`leg-${from.id}-${to.id}`} className="day-leg-row">
+          <button type="button" className="day-leg-add" onClick={() => onPickRoute(from, to)}>
+            + 이동 방법
+          </button>
+        </li>
+      )
+    }
     return (
       <li key={`leg-${from.id}-${to.id}`} className="day-leg-row">
         <span className="day-leg-emoji">{TRAVEL_MODE_EMOJI[route.mode]}</span>

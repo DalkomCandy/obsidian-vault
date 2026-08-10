@@ -75,6 +75,7 @@ function App() {
   const [draftLocation, setDraftLocation] = useState<DraftLocation | null>(null)
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null)
   const [routeOriginId, setRouteOriginId] = useState<string | null>(null)
+  const [routeRequest, setRouteRequest] = useState<{ origin: Place; destination: Place } | null>(null)
   const [focusPlace, setFocusPlace] = useState<Place | null>(null)
   const [hint, setHint] = useState<string | null>(null)
   const hintTimer = useRef<number | undefined>(undefined)
@@ -280,6 +281,16 @@ function App() {
     setEditDraft(null)
   }
 
+  // Picking a leg straight out of the day's itinerary: both ends are already
+  // known, so this skips the map's two-marker dance entirely.
+  const handlePickRoute = (from: Place, to: Place) => {
+    setOpenPlaceId(null)
+    setRouteOriginId(null)
+    setRouteRequest({ origin: from, destination: to })
+    // The picker anchors to the destination marker, which the sheet covers.
+    if (isMobile) setSheetSnap('peek')
+  }
+
   const handleSetRouteOrigin = (place: Place | null) => {
     setRouteOriginId(place?.id ?? null)
     if (place) showHint('다른 장소를 클릭해서 경로를 확인하세요')
@@ -321,6 +332,7 @@ function App() {
           places={sidebarPlaces}
           onEditPlace={handleEditPlace}
           onFocusPlace={handleFocusPlace}
+          onPickRoute={handlePickRoute}
           width={isMobile ? undefined : sidebarWidth}
           sheetSnap={isMobile ? sheetSnap : null}
           onSheetSnapChange={setSheetSnap}
@@ -358,6 +370,8 @@ function App() {
             onCancelDraft={() => setDraftLocation(null)}
             onDraftNameChange={(name) => setDraftLocation((prev) => (prev ? { ...prev, name } : prev))}
             routeOriginId={routeOriginId}
+            routeRequest={routeRequest}
+            onRouteRequestHandled={() => setRouteRequest(null)}
             onSetRouteOrigin={handleSetRouteOrigin}
             onRouteCommitted={handleRouteCommitted}
           />

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AdvancedMarker, InfoWindow, useAdvancedMarkerRef } from '@vis.gl/react-google-maps'
 import type { Place } from '../types'
 import { FALLBACK_CATEGORY_LABEL, FALLBACK_CATEGORY_STYLE, googleMapsNavigationUrl, googleMapsViewUrl } from '../types'
@@ -48,6 +48,13 @@ export function PlaceMarker({
   const showPlaceLabels = usePlaceStore((s) => s.showPlaceLabels)
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [moreOpen, setMoreOpen] = useState(false)
+
+  // Reopening a popup should start from the collapsed row, not from whatever
+  // the overflow menu was left on last time.
+  useEffect(() => {
+    if (!isOpen) setMoreOpen(false)
+  }, [isOpen])
 
   const handleAiSummarize = async () => {
     setAiLoading(true)
@@ -113,6 +120,9 @@ export function PlaceMarker({
               </a>
             )}
             {aiError && <div className="popup-ai-error">{aiError}</div>}
+            {/* Only the three actions used on nearly every visit stay on the
+                row; the rest live behind ⋯ so the popup doesn't read as a
+                wall of buttons. */}
             <div className="popup-actions">
               {/* Hands off to the Google Maps app for real turn-by-turn
                   walking directions from wherever you're standing. */}
@@ -124,27 +134,7 @@ export function PlaceMarker({
               >
                 길찾기
               </a>
-              <button onClick={() => onRouteFrom(place)}>경로</button>
               <button onClick={() => onEditPlace(place)}>수정</button>
-              <button
-                title={place.style ? '이 장소만의 색/모양/아이콘 (지정됨)' : '이 장소만 카테고리와 다른 색/모양/아이콘 지정'}
-                onClick={() => onEditStyle(place)}
-              >
-                🎨
-              </button>
-              <button
-                title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
-                onClick={() => {
-                  const copy = duplicatePlace(place.id)
-                  onOpenChange(false)
-                  if (copy) onEditPlace(copy)
-                }}
-              >
-                복제
-              </button>
-              <button onClick={handleAiSummarize} disabled={aiLoading}>
-                {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}
-              </button>
               <button
                 className="danger"
                 onClick={() => {
@@ -154,6 +144,50 @@ export function PlaceMarker({
               >
                 삭제
               </button>
+              <div className="popup-more">
+                <button
+                  className="popup-more-btn"
+                  title="더보기"
+                  aria-expanded={moreOpen}
+                  onClick={() => setMoreOpen((v) => !v)}
+                >
+                  ⋯
+                </button>
+                {moreOpen && (
+                  <div className="popup-more-menu">
+                    <button
+                      onClick={() => {
+                        setMoreOpen(false)
+                        onRouteFrom(place)
+                      }}
+                    >
+                      🔀 여기서 경로 그리기
+                    </button>
+                    <button
+                      onClick={() => {
+                        setMoreOpen(false)
+                        onEditStyle(place)
+                      }}
+                    >
+                      🎨 이 장소 스타일{place.style ? ' (지정됨)' : ''}
+                    </button>
+                    <button
+                      title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
+                      onClick={() => {
+                        setMoreOpen(false)
+                        const copy = duplicatePlace(place.id)
+                        onOpenChange(false)
+                        if (copy) onEditPlace(copy)
+                      }}
+                    >
+                      ⧉ 복제
+                    </button>
+                    <button onClick={handleAiSummarize} disabled={aiLoading}>
+                      {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </InfoWindow>

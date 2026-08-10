@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Map, useMapsLibrary, useMap, type MapMouseEvent } from '@vis.gl/react-google-maps'
 import type { Category, Place, TravelMode } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
@@ -56,6 +56,9 @@ interface MapViewProps {
   onCancelDraft: () => void
   onDraftNameChange: (name: string) => void
   routeOriginId: string | null
+  /** A leg chosen from the itinerary, opened directly in the mode picker. */
+  routeRequest: { origin: Place; destination: Place } | null
+  onRouteRequestHandled: () => void
   onSetRouteOrigin: (place: Place | null) => void
   onRouteCommitted: (originName: string, destinationId: string, mode: TravelMode, option: RouteOption) => void
 }
@@ -78,6 +81,8 @@ export function MapView({
   onCancelDraft,
   onDraftNameChange,
   routeOriginId,
+  routeRequest,
+  onRouteRequestHandled,
   onSetRouteOrigin,
   onRouteCommitted,
 }: MapViewProps) {
@@ -91,6 +96,12 @@ export function MapView({
   const [routeCandidate, setRouteCandidate] = useState<{ origin: Place; destination: Place } | null>(null)
   const { location, status, error: locationError, toggle: toggleLocation, active: locationActive } = useCurrentLocation()
   const [pendingRecenter, setPendingRecenter] = useState(false)
+
+  useEffect(() => {
+    if (!routeRequest) return
+    setRouteCandidate(routeRequest)
+    onRouteRequestHandled()
+  }, [routeRequest, onRouteRequestHandled])
 
   const clearRouteState = useCallback(() => {
     setRouteCandidate(null)

@@ -989,6 +989,22 @@
   font-size: 10.5px;
 }
 
+/* The same gap, before a route exists for it -- the itinerary already knows
+   both ends, so this is the shortest path to filling one in. */
+.day-leg-add {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 10.5px;
+  padding: 0;
+  opacity: 0.75;
+}
+
+.day-leg-add:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
 .place-item:hover {
   background: var(--chip-bg);
 }
@@ -1264,6 +1280,51 @@
   font-size: 10.5px;
   font-weight: 700;
   color: #1f2430;
+}
+
+.popup-more {
+  position: relative;
+  margin-left: auto;
+}
+
+.popup-more-btn {
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  border-radius: 4px;
+  padding: 5px 9px;
+  font-size: 12px;
+  line-height: 1;
+  color: #1f2430;
+}
+
+.popup-more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  min-width: 168px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+  padding: 4px;
+}
+
+.popup-more-menu button {
+  border: none;
+  background: none;
+  text-align: left;
+  white-space: nowrap;
+  padding: 7px 9px;
+  border-radius: 5px;
+  font-size: 12px;
+  color: #1f2430;
+}
+
+.popup-more-menu button:hover:not(:disabled) {
+  background: #f3f4f6;
 }
 
 .popup-actions button.danger {

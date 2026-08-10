@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar'
 import { DeleteUndoToast } from './components/DeleteUndoToast'
 import { PwaUpdateBanner } from './components/PwaUpdateBanner'
 import { PlaceForm, draftFromPlace, type PlaceDraft } from './components/PlaceForm'
+import { PlaceStylePicker } from './components/PlaceStylePicker'
 import type { SearchResult } from './components/SearchBox'
 import type { DraftLocation } from './components/QuickAddMarker'
 import type { RouteOption } from './components/RouteModePicker'
@@ -70,6 +71,7 @@ function App() {
   const updatePlace = usePlaceStore((s) => s.updatePlace)
 
   const [editDraft, setEditDraft] = useState<PlaceDraft | null>(null)
+  const [styleEditPlace, setStyleEditPlace] = useState<Place | null>(null)
   const [draftLocation, setDraftLocation] = useState<DraftLocation | null>(null)
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null)
   const [routeOriginId, setRouteOriginId] = useState<string | null>(null)
@@ -249,6 +251,10 @@ function App() {
     setEditDraft(draftFromPlace(place))
   }
 
+  const handleEditStyle = (place: Place) => {
+    setStyleEditPlace(place)
+  }
+
   const handleFocusPlace = (place: Place) => {
     setFocusPlace({ ...place })
   }
@@ -337,6 +343,7 @@ function App() {
             onOpenPlaceChange={setOpenPlaceId}
             onLocationPicked={handleLocationPicked}
             onEditPlace={handleEditPlace}
+            onEditStyle={handleEditStyle}
             onSaveDraft={handleSaveDraft}
             onCancelDraft={() => setDraftLocation(null)}
             onDraftNameChange={(name) => setDraftLocation((prev) => (prev ? { ...prev, name } : prev))}
@@ -347,6 +354,9 @@ function App() {
         </main>
         {editDraft && (
           <PlaceForm draft={editDraft} onSave={handleSaveEdit} onCancel={() => setEditDraft(null)} />
+        )}
+        {styleEditPlace && (
+          <PlaceStylePicker place={styleEditPlace} onClose={() => setStyleEditPlace(null)} />
         )}
         <DeleteUndoToast />
         <PwaUpdateBanner />

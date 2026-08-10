@@ -247,6 +247,10 @@ interface PlaceStore {
    * spot you'll visit more than once, like accommodation you return to. */
   duplicatePlace: (id: string) => Place | null
   updatePlace: (id: string, patch: Partial<Place>) => void
+  /** Sets a per-place marker style override, independent of its category's. */
+  setPlaceStyle: (id: string, style: CategoryStyle) => void
+  /** Drops the override so the place goes back to following its category's style. */
+  clearPlaceStyle: (id: string) => void
   removePlace: (id: string) => void
   /** Removes the place immediately but keeps it (plus its routes) recoverable via undoDeletePlace for a few seconds. */
   deletePlaceWithUndo: (id: string) => void
@@ -368,6 +372,24 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
 
   updatePlace: (id, patch) => {
     const places = get().places.map((p) => (p.id === id ? { ...p, ...patch } : p))
+    set({ places })
+    persistPlaces(places)
+  },
+
+  setPlaceStyle: (id, style) => {
+    get().updatePlace(id, { style })
+  },
+
+  clearPlaceStyle: (id) => {
+    // A plain updatePlace({ style: undefined }) merge would leave the key
+    // present-but-undefined, which reads identically to "no override" via
+    // `place.style ?? categoryStyle` everywhere -- but dropping it entirely
+    // keeps persisted/exported data from carrying dead fields around.
+    const places = get().places.map((p) => {
+      if (p.id !== id) return p
+      const { style: _style, ...rest } = p
+      return rest
+    })
     set({ places })
     persistPlaces(places)
   },

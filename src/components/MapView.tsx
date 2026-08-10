@@ -49,6 +49,7 @@ interface MapViewProps {
   onOpenPlaceChange: (id: string | null) => void
   onLocationPicked: (result: SearchResult) => void
   onEditPlace: (place: Place) => void
+  onEditStyle: (place: Place) => void
   onSaveDraft: (category: Category) => void
   onCancelDraft: () => void
   onDraftNameChange: (name: string) => void
@@ -69,6 +70,7 @@ export function MapView({
   onOpenPlaceChange,
   onLocationPicked,
   onEditPlace,
+  onEditStyle,
   onSaveDraft,
   onCancelDraft,
   onDraftNameChange,
@@ -175,6 +177,7 @@ export function MapView({
               if (open && draftLocation) onCancelDraft()
             }}
             onEditPlace={onEditPlace}
+            onEditStyle={onEditStyle}
             onRouteFrom={(p) => {
               onOpenPlaceChange(null)
               setRouteCandidate(null)
@@ -192,6 +195,7 @@ export function MapView({
       draftLocation,
       onCancelDraft,
       onEditPlace,
+      onEditStyle,
       routeOriginId,
       onSetRouteOrigin,
     ],

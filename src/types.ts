@@ -47,6 +47,9 @@ export interface Place {
   linkUrl?: string
   /** Planned visit time as 'HH:MM'. Absent means "no fixed time". */
   time?: string
+  /** Overrides the category's marker style for this place alone. Absent
+   * means "use the category's style", same as every other place in it. */
+  style?: CategoryStyle
 }
 
 /** Valid 'HH:MM' in 24-hour form, or empty for "clear the time". */

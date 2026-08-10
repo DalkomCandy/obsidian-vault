@@ -16,6 +16,7 @@ interface PlaceMarkerProps {
   onMarkerClick: () => void
   onOpenChange: (open: boolean) => void
   onEditPlace: (place: Place) => void
+  onEditStyle: (place: Place) => void
   onRouteFrom: (place: Place) => void
 }
 
@@ -27,6 +28,7 @@ export function PlaceMarker({
   onMarkerClick,
   onOpenChange,
   onEditPlace,
+  onEditStyle,
   onRouteFrom,
 }: PlaceMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
@@ -35,7 +37,12 @@ export function PlaceMarker({
   const updatePlace = usePlaceStore((s) => s.updatePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
-  const style = usePlaceStore((s) => s.categoryStyles[place.category]) ?? FALLBACK_CATEGORY_STYLE
+  const categoryStyle = usePlaceStore((s) => s.categoryStyles[place.category]) ?? FALLBACK_CATEGORY_STYLE
+  // A place-level override takes over from the category's style entirely
+  // (not merged field-by-field) -- picking one always sets color+shape+icon
+  // together, so there's no risk of an override with a stale icon from a
+  // since-changed category style.
+  const style = place.style ?? categoryStyle
   const iconScale = usePlaceStore((s) => s.iconScale)
   const fadedOpacity = usePlaceStore((s) => s.fadedOpacity)
   const [aiLoading, setAiLoading] = useState(false)
@@ -117,6 +124,12 @@ export function PlaceMarker({
               </a>
               <button onClick={() => onRouteFrom(place)}>경로</button>
               <button onClick={() => onEditPlace(place)}>수정</button>
+              <button
+                title={place.style ? '이 장소만의 색/모양/아이콘 (지정됨)' : '이 장소만 카테고리와 다른 색/모양/아이콘 지정'}
+                onClick={() => onEditStyle(place)}
+              >
+                🎨
+              </button>
               <button
                 title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
                 onClick={() => {

@@ -642,8 +642,24 @@
   border-color: var(--accent);
 }
 
+.category-style-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.category-style-reset {
+  margin-right: auto;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  text-decoration: underline;
+  padding: 4px 0;
+}
+
 .category-style-apply {
-  align-self: flex-end;
   border: 1px solid var(--accent);
   background: var(--accent);
   color: var(--accent-contrast);

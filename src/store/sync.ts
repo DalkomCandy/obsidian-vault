@@ -35,6 +35,30 @@ let applyingRemote = false
  */
 let currentUserId: string | null = null
 
+export interface SyncStatus {
+  state: 'idle' | 'ok' | 'error'
+  /** When the last successful push or pull completed. */
+  at: number | null
+  message: string | null
+}
+
+let status: SyncStatus = { state: 'idle', at: null, message: null }
+const statusListeners = new Set<() => void>()
+
+function setStatus(next: SyncStatus) {
+  status = next
+  for (const listen of statusListeners) listen()
+}
+
+export function getSyncStatus(): SyncStatus {
+  return status
+}
+
+export function subscribeSyncStatus(listener: () => void): () => void {
+  statusListeners.add(listener)
+  return () => statusListeners.delete(listener)
+}
+
 async function pushNow() {
   if (!supabase || !currentUserId) return
   try {
@@ -42,7 +66,10 @@ async function pushNow() {
       .from('app_state')
       .upsert({ user_id: currentUserId, data: snapshot(), updated_at: new Date().toISOString() })
     if (error) throw error
+    setStatus({ state: 'ok', at: Date.now(), message: null })
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    setStatus({ state: 'error', at: Date.now(), message })
     console.error('[supabase] 동기화 실패 (네트워크 확인 필요). 로컬 저장은 정상입니다.', err)
   }
 }
@@ -141,6 +168,7 @@ async function loadRemoteStateOnce(): Promise<void> {
       .eq('user_id', currentUserId)
       .maybeSingle()
     if (error) {
+      setStatus({ state: 'error', at: Date.now(), message: error.message })
       console.error('[supabase] 원격 데이터를 불러오지 못했어요.', error)
       return
     }
@@ -192,7 +220,10 @@ async function loadRemoteStateOnce(): Promise<void> {
     // have yet (e.g. this device connecting to Supabase for the first
     // time) -- push the converged result back up so both sides match.
     if (changed) await pushNow()
+    else setStatus({ state: 'ok', at: Date.now(), message: null })
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    setStatus({ state: 'error', at: Date.now(), message })
     console.error('[supabase] 원격 데이터를 불러오지 못했어요. 이 기기의 로컬 데이터를 그대로 사용합니다.', err)
   }
 }

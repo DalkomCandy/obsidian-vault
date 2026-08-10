@@ -10,6 +10,13 @@ const base = process.env.VITE_BASE_PATH ?? '/'
 // https://vite.dev/config/
 export default defineConfig({
   base,
+  // Baked into the bundle so the in-app diagnostics can say exactly which
+  // build is running -- otherwise a bug report can't be matched to a commit,
+  // and a stale service worker looks identical to a fresh one.
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    __BUILD_COMMIT__: JSON.stringify((process.env.GITHUB_SHA ?? 'dev').slice(0, 7)),
+  },
   plugins: [
     react(),
     VitePWA({

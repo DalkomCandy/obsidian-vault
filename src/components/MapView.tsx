@@ -14,6 +14,7 @@ import { CurrentLocationMarker } from './CurrentLocationMarker'
 import { useCurrentLocation } from '../hooks/useCurrentLocation'
 import { RegionPicker } from './RegionPicker'
 import { SettingsMenu } from './SettingsMenu'
+import { TripMenu } from './TripMenu'
 import { CategoryFilter } from './CategoryFilter'
 
 /** Recentres the map on the tracked position without restarting the watch. */
@@ -187,6 +188,7 @@ export function MapView({
       <div className="map-topbar">
         <RegionPicker variant="floating" />
         <SearchBox onPlaceSelected={onLocationPicked} />
+        <TripMenu />
         <SettingsMenu />
       </div>
       <CategoryFilter compact />

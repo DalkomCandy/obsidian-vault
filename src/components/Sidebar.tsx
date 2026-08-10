@@ -10,12 +10,9 @@ import {
   tripDayCount,
 } from '../types'
 import { usePlaceStore } from '../store/usePlaceStore'
-import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
 import { DRAG_ID_ATTR, DROP_GROUP_ATTR, useRowDrag } from '../hooks/useRowDrag'
 import { useSheetDrag, type SheetSnap } from '../hooks/useSheetDrag'
-import { ImportPlacesDialog } from './ImportPlacesDialog'
 import { TimeCell } from './TimeCell'
-import { TripPicker } from './TripPicker'
 import { CategoryStylePicker } from './CategoryStylePicker'
 
 export type { SheetSnap }
@@ -74,9 +71,6 @@ export function Sidebar({
   const setSelectedRegion = usePlaceStore((s) => s.setSelectedRegion)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const setSelectedTripId = usePlaceStore((s) => s.setSelectedTripId)
-  const addTrip = usePlaceStore((s) => s.addTrip)
-  const renameTrip = usePlaceStore((s) => s.renameTrip)
-  const removeTrip = usePlaceStore((s) => s.removeTrip)
   const activeAddCategory = usePlaceStore((s) => s.activeAddCategory)
   const setActiveAddCategory = usePlaceStore((s) => s.setActiveAddCategory)
   const addCategory = usePlaceStore((s) => s.addCategory)
@@ -89,7 +83,6 @@ export function Sidebar({
   const [renameDraft, setRenameDraft] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState<Set<Category>>(new Set())
   const [groupMode, setGroupModeState] = useState<GroupMode>(loadGroupMode)
-  const [importing, setImporting] = useState(false)
 
   const sheetRef = useRef<HTMLElement>(null)
   const { dragHeight, grabberProps } = useSheetDrag({
@@ -166,15 +159,6 @@ export function Sidebar({
       }
     }
     return { seconds, meters, missing }
-  }
-
-  const handleExport = () => {
-    if (!selectedTrip) return
-    const tripPlaces = places.filter((p) => p.tripId === selectedTrip.id)
-    const placeIds = new Set(tripPlaces.map((p) => p.id))
-    const tripRoutes = routes.filter((r) => placeIds.has(r.originId) && placeIds.has(r.destinationId))
-    const kml = buildTripKml(selectedTrip, tripPlaces, tripRoutes, categoryLabels)
-    downloadKml(kmlFilename(selectedTrip), kml)
   }
 
   // Every day gets a section even when empty -- an empty day still needs to
@@ -368,35 +352,10 @@ export function Sidebar({
           <span className="sheet-grabber-bar" />
         </button>
       )}
-      {importing && selectedTrip && (
-        <ImportPlacesDialog
-          targetTrip={selectedTrip}
-          onClose={() => setImporting(false)}
-          onImported={(count) =>
-            alert(count > 0 ? `${count}개 장소를 가져왔어요.` : '가져올 새 장소가 없었어요 (이미 저장된 장소는 건너뜁니다).')
-          }
-        />
-      )}
-      {/* Region select, search, settings and the category filter all live in
-          the floating bar over the map now (both platforms) -- the sidebar
-          starts directly with the trip content they'd otherwise sit above. */}
-      {selectedRegion && (
-        <TripPicker
-          region={selectedRegion}
-          trips={trips}
-          selectedTripId={selectedTripId}
-          onSelectTrip={setSelectedTripId}
-          onCreateTrip={(name) => {
-            const trip = addTrip(selectedRegion, name)
-            setSelectedTripId(trip.id)
-          }}
-          onRenameTrip={renameTrip}
-          onDeleteTrip={removeTrip}
-          onImportPlaces={() => setImporting(true)}
-          onExportTrip={handleExport}
-        />
-      )}
-
+      {/* Region select, search, settings, the category filter, and trip
+          switching/management all live in the floating bar over the map now
+          (both platforms) -- the sidebar starts directly with the group-mode
+          toggle they'd otherwise sit above. */}
       {selectedTripId && (
         <div className="group-mode-row">
           <div className="group-mode-toggle">

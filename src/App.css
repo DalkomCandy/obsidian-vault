@@ -115,6 +115,55 @@
   color: var(--text-muted);
 }
 
+/* ---------- Trip menu (floating-bar icon that opens TripPicker) ---------- */
+
+.trip-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.trip-menu-btn {
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  border-radius: 999px;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trip-menu-btn:hover {
+  background: var(--chip-bg);
+}
+
+/* The hamburger glyph rotated on its side reads as "switch between"
+   rather than "open a list", distinguishing it from a nav/menu icon. */
+.trip-menu-icon {
+  display: inline-block;
+  transform: rotate(90deg);
+}
+
+.trip-menu-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  width: 260px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  padding: 12px;
+}
+
+.trip-menu-panel .trip-picker {
+  padding: 0;
+}
+
 .icon-size-control {
   display: flex;
   flex-direction: column;
@@ -878,7 +927,8 @@
   width: 148px;
 }
 
-.map-topbar .settings-menu {
+.map-topbar .settings-menu,
+.map-topbar .trip-menu {
   flex-shrink: 0;
 }
 
@@ -1941,7 +1991,8 @@
     height: 44px;
   }
 
-  .settings-menu-btn {
+  .settings-menu-btn,
+  .trip-menu-btn {
     width: 44px;
     height: 44px;
   }

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { APILoadingStatus, useApiLoadingStatus } from '@vis.gl/react-google-maps'
 import { usePlaceStore } from '../store/usePlaceStore'
 import { getSyncStatus, subscribeSyncStatus } from '../store/sync'
+import { getPlaceLookupStatus, subscribePlaceLookupStatus } from '../lib/placeLookupStatus'
 import { isSupabaseConfigured, supabaseInitError } from '../lib/supabase'
 import { OLLAMA_MODEL, OLLAMA_URL, diagnoseOllama } from '../lib/ollama'
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth'
@@ -76,6 +77,7 @@ export function DiagnosticsPanel() {
 
   const [, forceUpdate] = useState(0)
   useEffect(() => subscribeSyncStatus(() => forceUpdate((n) => n + 1)), [])
+  useEffect(() => subscribePlaceLookupStatus(() => forceUpdate((n) => n + 1)), [])
 
   const [mapsStalled, setMapsStalled] = useState(false)
   useEffect(() => {
@@ -114,6 +116,7 @@ export function DiagnosticsPanel() {
   }, [])
 
   const sync = getSyncStatus()
+  const placeLookup = getPlaceLookupStatus()
   const storageBytes = (() => {
     try {
       let total = 0
@@ -155,6 +158,18 @@ export function DiagnosticsPanel() {
       level: online ? 'info' : 'warn',
     },
     mapsRow(apiStatus, mapsStalled),
+    ...(placeLookup.state === 'idle'
+      ? []
+      : [
+          placeLookup.state === 'ok'
+            ? { label: '장소 정보 조회', value: `정상 · ${ago(placeLookup.at)}`, level: 'ok' as const }
+            : {
+                label: '장소 정보 조회',
+                value: `실패 · ${ago(placeLookup.at)}`,
+                level: 'fail' as const,
+                hint: placeLookup.message ?? undefined,
+              },
+        ]),
     {
       label: '위치 권한',
       value: permission === 'granted' ? '허용' : permission === 'denied' ? '거부됨' : permission === 'prompt' ? '아직 안 물어봄' : permission,

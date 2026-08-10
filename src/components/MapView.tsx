@@ -12,6 +12,7 @@ import { RouteModePicker, type RouteOption } from './RouteModePicker'
 import { RouteLine } from './RouteLine'
 import { CurrentLocationMarker } from './CurrentLocationMarker'
 import { useCurrentLocation } from '../hooks/useCurrentLocation'
+import { reportPlaceLookupError, reportPlaceLookupSuccess } from '../lib/placeLookupStatus'
 import { SettingsMenu } from './SettingsMenu'
 import { TripMenu } from './TripMenu'
 import { CategoryFilter } from './CategoryFilter'
@@ -118,6 +119,7 @@ export function MapView({
         await place.fetchFields({
           fields: ['displayName', 'location', 'formattedAddress', 'rating', 'userRatingCount', 'googleMapsURI'],
         })
+        reportPlaceLookupSuccess()
         onLocationPicked({
           name: place.displayName ?? '',
           lat: place.location?.lat() ?? latLng.lat,
@@ -129,9 +131,14 @@ export function MapView({
         })
       } catch (err) {
         // Google's place lookup can fail for POIs it otherwise shows on the
-        // map (quota, transient network errors, ids it won't resolve) -- the
-        // popup lets the name be typed in by hand rather than getting stuck.
+        // map (quota, permissions, transient network errors, ids it won't
+        // resolve) -- the popup lets the name be typed in by hand rather
+        // than getting stuck, and the diagnostics panel surfaces why so a
+        // lookup that fails for every single POI (a config problem) reads
+        // differently from one that fails occasionally (network blips).
+        const message = err instanceof Error ? err.message : String(err)
         console.error('Failed to fetch place details', err)
+        reportPlaceLookupError(message)
         onLocationPicked({ name: '', lat: latLng.lat, lng: latLng.lng })
       }
     },

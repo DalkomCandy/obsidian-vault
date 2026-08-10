@@ -69,6 +69,7 @@
 .settings-menu-btn {
   border: 1px solid var(--border);
   background: var(--panel-bg);
+  color: var(--text);
   border-radius: 999px;
   width: 30px;
   height: 30px;
@@ -125,6 +126,7 @@
 .trip-menu-btn {
   border: 1px solid var(--border);
   background: var(--panel-bg);
+  color: var(--text);
   border-radius: 999px;
   width: 30px;
   height: 30px;

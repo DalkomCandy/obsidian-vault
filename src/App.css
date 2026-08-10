@@ -141,14 +141,16 @@
 
 .region-select {
   width: 100%;
+  min-width: 0;
   font: inherit;
   /* Matches .region-add-btn exactly so the two sit on one clean row. */
   height: 32px;
-  padding: 0 8px;
+  padding: 0 6px;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--text);
+  text-overflow: ellipsis;
 }
 
 /* ---------- Trip picker ---------- */
@@ -842,6 +844,89 @@
   width: min(420px, calc(100% - 24px));
 }
 
+/* Region select + search + settings, combined into one floating row over
+   the map on mobile, replacing the standalone .search-box positioning. */
+.map-topbar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.map-topbar .search-box {
+  position: static;
+  transform: none;
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-topbar .region-picker {
+  flex: 0 0 auto;
+  width: 148px;
+}
+
+.map-topbar .settings-menu {
+  flex-shrink: 0;
+}
+
+/* Floating variant of the add-region field: a popover under the button
+   instead of a row that would push the search box down. */
+.region-picker.floating {
+  position: relative;
+}
+
+.region-picker.floating .region-add-row {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 8px;
+  margin: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+}
+
+/* Category chips as a second floating row, directly below the top bar. */
+.category-filter.compact {
+  position: absolute;
+  top: 64px;
+  left: 12px;
+  right: 12px;
+  z-index: 9;
+  padding: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.category-filter.compact .category-filter-chips {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.category-filter.compact .category-filter-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.category-filter.compact .category-chip {
+  flex-shrink: 0;
+  background: var(--bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.category-chip-all {
+  font-weight: 600;
+}
+
 .search-box input {
   width: 100%;
   font: inherit;
@@ -1416,6 +1501,11 @@
   color: #b91c1c;
 }
 
+.region-picker {
+  flex: 1;
+  min-width: 0;
+}
+
 .region-row {
   display: flex;
   gap: 6px;
@@ -1780,6 +1870,13 @@
     height: 88vh;
   }
 
+  /* While actively dragging, height is set inline per pointer move -- the
+     CSS transition would make it visibly lag behind the finger. It comes
+     back once the drag ends and the sheet settles into a snap point. */
+  .sidebar-sheet.dragging {
+    transition: none;
+  }
+
   .sheet-grabber {
     flex-shrink: 0;
     width: 100%;
@@ -1803,24 +1900,24 @@
     background: var(--border);
   }
 
-  /* Keep the map's own furniture clear of the sheet. */
+  /* Keep the map's own furniture clear of the top bar + filter chip row. */
   .app-shell.mobile .map-controls {
     bottom: auto;
-    top: 68px;
+    top: 116px;
   }
 
-  .app-shell.mobile .search-box {
+  /* Both rows of the floating top bar sit above these on mobile now,
+     instead of the single search-box row they were originally placed under. */
+  .app-shell.mobile .offline-banner {
+    top: 116px;
     left: 12px;
     right: 12px;
-    /* The desktop rule centres via translateX(-50%); left/right alone would
-       leave that shift in place and push the box off the left edge. */
     transform: none;
-    width: auto;
     max-width: none;
   }
 
-  .app-shell.mobile .offline-banner,
   .app-shell.mobile .map-location-error {
+    top: 164px;
     left: 12px;
     right: 12px;
     transform: none;

@@ -298,6 +298,7 @@ function App() {
           <MapView
             places={mapPlaces}
             visitOrderByPlaceId={visitOrderByPlaceId}
+            isMobile={isMobile}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}
             draftLocation={draftLocation}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import type { Category, Place } from '../types'
 import {
   MAX_DAY_COUNT,
@@ -12,14 +12,16 @@ import {
 import { usePlaceStore } from '../store/usePlaceStore'
 import { buildTripKml, downloadKml, kmlFilename } from '../lib/exportKml'
 import { DRAG_ID_ATTR, DROP_GROUP_ATTR, useRowDrag } from '../hooks/useRowDrag'
+import { useSheetDrag, type SheetSnap } from '../hooks/useSheetDrag'
 import { ImportPlacesDialog } from './ImportPlacesDialog'
 import { TimeCell } from './TimeCell'
 import { TripPicker } from './TripPicker'
 import { SettingsMenu } from './SettingsMenu'
+import { RegionPicker } from './RegionPicker'
 import { CategoryStylePicker } from './CategoryStylePicker'
 import { CategoryFilter } from './CategoryFilter'
 
-export type SheetSnap = 'peek' | 'half' | 'full'
+export type { SheetSnap }
 
 interface SidebarProps {
   places: Place[]
@@ -33,8 +35,6 @@ interface SidebarProps {
   /** Collapse the sheet so the map is visible after picking a place. */
   onFocusFromSheet: () => void
 }
-
-const SNAP_ORDER: SheetSnap[] = ['peek', 'half', 'full']
 
 type GroupMode = 'category' | 'day'
 
@@ -77,9 +77,6 @@ export function Sidebar({
   const setSelectedRegion = usePlaceStore((s) => s.setSelectedRegion)
   const selectedTripId = usePlaceStore((s) => s.selectedTripId)
   const setSelectedTripId = usePlaceStore((s) => s.setSelectedTripId)
-  const selectedCategories = usePlaceStore((s) => s.selectedCategories)
-  const toggleCategoryFilter = usePlaceStore((s) => s.toggleCategoryFilter)
-  const setAllCategoriesSelected = usePlaceStore((s) => s.setAllCategoriesSelected)
   const addTrip = usePlaceStore((s) => s.addTrip)
   const renameTrip = usePlaceStore((s) => s.renameTrip)
   const removeTrip = usePlaceStore((s) => s.removeTrip)
@@ -92,11 +89,16 @@ export function Sidebar({
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [renamingCategory, setRenamingCategory] = useState<Category | null>(null)
   const [renameDraft, setRenameDraft] = useState('')
-  const [addingRegion, setAddingRegion] = useState(false)
-  const [regionDraft, setRegionDraft] = useState('')
   const [collapsedCategories, setCollapsedCategories] = useState<Set<Category>>(new Set())
   const [groupMode, setGroupModeState] = useState<GroupMode>(loadGroupMode)
   const [importing, setImporting] = useState(false)
+
+  const sheetRef = useRef<HTMLElement>(null)
+  const { dragHeight, grabberProps } = useSheetDrag({
+    snap: sheetSnap ?? 'half',
+    onSnapChange: onSheetSnapChange,
+    sheetRef,
+  })
 
   const { draggedId, hoverTarget, handleProps } = useRowDrag({
     onDropOnRow: (id, targetId) => movePlace(id, targetId, groupMode),
@@ -120,15 +122,6 @@ export function Sidebar({
       return next
     })
   }
-
-  const regions = useMemo(() => {
-    const all = trips.map((t) => t.region)
-    // A freshly-typed region has no trips yet, so it wouldn't otherwise
-    // appear as an <option> -- which would make the <select> show blank
-    // even though it's the actively selected region.
-    if (selectedRegion) all.push(selectedRegion)
-    return [...new Set(all)].sort((a, b) => a.localeCompare(b, 'ko'))
-  }, [trips, selectedRegion])
 
   const tripById = useMemo(() => new Map(trips.map((t) => [t.id, t])), [trips])
 
@@ -233,13 +226,6 @@ export function Sidebar({
     }
     return [...map.entries()].sort((a, b) => a[0].localeCompare(b[0], 'ko'))
   }, [places, tripById])
-
-  const submitNewRegion = () => {
-    const name = regionDraft.trim()
-    if (name) setSelectedRegion(name)
-    setRegionDraft('')
-    setAddingRegion(false)
-  }
 
   const handleAddCategory = () => {
     const name = nextEmptyCategoryName(Object.values(categoryLabels))
@@ -367,19 +353,19 @@ export function Sidebar({
 
   return (
     <aside
-      className={sheetSnap ? 'sidebar sidebar-sheet' : 'sidebar'}
-      style={sheetSnap ? undefined : { width, minWidth: width }}
+      ref={sheetRef}
+      className={
+        sheetSnap ? (dragHeight !== null ? 'sidebar sidebar-sheet dragging' : 'sidebar sidebar-sheet') : 'sidebar'
+      }
+      style={sheetSnap ? (dragHeight !== null ? { height: dragHeight } : undefined) : { width, minWidth: width }}
     >
       {sheetSnap && (
         <button
           type="button"
           className="sheet-grabber"
           aria-label={sheetSnap === 'full' ? '목록 접기' : '목록 펼치기'}
-          title="눌러서 목록 크기 조절"
-          onClick={() => {
-            const next = SNAP_ORDER[(SNAP_ORDER.indexOf(sheetSnap) + 1) % SNAP_ORDER.length]
-            onSheetSnapChange(next)
-          }}
+          title="끌어서 크기를 조절하거나 눌러서 전환"
+          {...grabberProps}
         >
           <span className="sheet-grabber-bar" />
         </button>
@@ -393,47 +379,12 @@ export function Sidebar({
           }
         />
       )}
-      <div className="sidebar-header-top">
-        <div className="region-row">
-          <select
-            className="region-select"
-            value={selectedRegion ?? ''}
-            onChange={(e) => setSelectedRegion(e.target.value || null)}
-          >
-            <option value="">전체 지역</option>
-            {regions.map((region) => (
-              <option key={region} value={region}>
-                {region}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            className="region-add-btn"
-            title="새 지역 추가"
-            onClick={() => setAddingRegion((v) => !v)}
-          >
-            +
-          </button>
-        </div>
-        <SettingsMenu />
-      </div>
-
-      {addingRegion && (
-        <div className="region-add-row">
-          <input
-            autoFocus
-            value={regionDraft}
-            onChange={(e) => setRegionDraft(e.target.value)}
-            placeholder="새 지역 이름 (예: 도쿄)"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') submitNewRegion()
-              if (e.key === 'Escape') setAddingRegion(false)
-            }}
-          />
-          <button type="button" className="primary" onClick={submitNewRegion}>
-            추가
-          </button>
+      {/* On mobile these live in the floating bar over the map instead --
+          rendering them here too would just be the same controls twice. */}
+      {!sheetSnap && (
+        <div className="sidebar-header-top">
+          <RegionPicker />
+          <SettingsMenu />
         </div>
       )}
 
@@ -454,11 +405,7 @@ export function Sidebar({
         />
       )}
 
-      <CategoryFilter
-        selected={selectedCategories}
-        onToggle={toggleCategoryFilter}
-        onSetAll={setAllCategoriesSelected}
-      />
+      {!sheetSnap && <CategoryFilter />}
 
       {selectedTripId && (
         <div className="group-mode-row">

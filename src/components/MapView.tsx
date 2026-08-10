@@ -12,6 +12,9 @@ import { RouteModePicker, type RouteOption } from './RouteModePicker'
 import { RouteLine } from './RouteLine'
 import { CurrentLocationMarker } from './CurrentLocationMarker'
 import { useCurrentLocation } from '../hooks/useCurrentLocation'
+import { RegionPicker } from './RegionPicker'
+import { SettingsMenu } from './SettingsMenu'
+import { CategoryFilter } from './CategoryFilter'
 
 /** Recentres the map on the tracked position without restarting the watch. */
 function RecenterButton({ lat, lng }: { lat: number; lng: number }) {
@@ -34,6 +37,11 @@ function RecenterButton({ lat, lng }: { lat: number; lng: number }) {
 interface MapViewProps {
   places: Place[]
   visitOrderByPlaceId: Map<string, number> | null
+  /** Combines the region picker, search and settings into one floating bar
+   * over the map instead of the sidebar's own header, since the sidebar is
+   * a bottom sheet here and starting it with those controls would push the
+   * actual place list well below the fold. */
+  isMobile: boolean
   focusPlace: Place | null
   fitPlaces: Place[] | null
   draftLocation: DraftLocation | null
@@ -52,6 +60,7 @@ interface MapViewProps {
 export function MapView({
   places,
   visitOrderByPlaceId,
+  isMobile,
   focusPlace,
   fitPlaces,
   draftLocation,
@@ -178,7 +187,16 @@ export function MapView({
 
   return (
     <>
-      <SearchBox onPlaceSelected={onLocationPicked} />
+      {isMobile ? (
+        <div className="map-topbar">
+          <RegionPicker variant="floating" />
+          <SearchBox onPlaceSelected={onLocationPicked} />
+          <SettingsMenu />
+        </div>
+      ) : (
+        <SearchBox onPlaceSelected={onLocationPicked} />
+      )}
+      {isMobile && <CategoryFilter compact />}
       {locationError && <div className="map-location-error">{locationError}</div>}
       <Map
         className="map-container"

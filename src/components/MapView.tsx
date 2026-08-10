@@ -37,11 +37,6 @@ function RecenterButton({ lat, lng }: { lat: number; lng: number }) {
 interface MapViewProps {
   places: Place[]
   visitOrderByPlaceId: Map<string, number> | null
-  /** Combines the region picker, search and settings into one floating bar
-   * over the map instead of the sidebar's own header, since the sidebar is
-   * a bottom sheet here and starting it with those controls would push the
-   * actual place list well below the fold. */
-  isMobile: boolean
   /** How much of the map div's edges the floating chrome actually covers. */
   mapPadding: MapPadding
   focusPlace: Place | null
@@ -62,7 +57,6 @@ interface MapViewProps {
 export function MapView({
   places,
   visitOrderByPlaceId,
-  isMobile,
   mapPadding,
   focusPlace,
   fitPlaces,
@@ -190,16 +184,12 @@ export function MapView({
 
   return (
     <>
-      {isMobile ? (
-        <div className="map-topbar">
-          <RegionPicker variant="floating" />
-          <SearchBox onPlaceSelected={onLocationPicked} />
-          <SettingsMenu />
-        </div>
-      ) : (
+      <div className="map-topbar">
+        <RegionPicker variant="floating" />
         <SearchBox onPlaceSelected={onLocationPicked} />
-      )}
-      {isMobile && <CategoryFilter compact />}
+        <SettingsMenu />
+      </div>
+      <CategoryFilter compact />
       {locationError && <div className="map-location-error">{locationError}</div>}
       <Map
         className="map-container"

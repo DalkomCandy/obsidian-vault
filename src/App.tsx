@@ -39,8 +39,9 @@ function isSameSpot(a: { lat: number; lng: number }, b: { lat: number; lng: numb
 // together on mobile -- keep in sync with the `top` offsets App.css gives
 // .map-controls/.offline-banner for the same reason (they clear the same
 // obstruction). Used so panning/fitting the map can avoid centring content
-// behind it, not just for visually parking other controls below it.
-const MOBILE_TOPBAR_COVER_PX = 112
+// behind it, not just for visually parking other controls below it. The bar
+// floats over the map on both platforms now, so this applies to both.
+const TOPBAR_COVER_PX = 112
 
 const SIDEBAR_WIDTH_KEY = 'travel-map.sidebarWidth'
 const MIN_SIDEBAR_WIDTH = 240
@@ -80,12 +81,12 @@ function App() {
   // between a peek (map-first), half, and near-full (list-first).
   const [sheetSnap, setSheetSnap] = useState<'peek' | 'half' | 'full'>('half')
 
-  // The sheet and top bars sit *over* the map on mobile rather than beside
-  // it, so fitting/panning to a place has to steer around them or a marker
-  // can end up centred right behind the sheet. Desktop's sidebar pushes the
-  // map div itself instead, so it needs no correction here.
+  // The floating top bar sits over the map on both platforms now, so
+  // fitting/panning always has to steer clear of it. Only mobile's bottom
+  // sheet also overlaps the map -- desktop's sidebar pushes the map div
+  // itself aside instead, so its bottom needs no correction.
   const mapPadding = useMemo(
-    () => (isMobile ? { top: MOBILE_TOPBAR_COVER_PX, bottom: Math.round(snapHeightPx(sheetSnap)) } : { top: 0, bottom: 0 }),
+    () => ({ top: TOPBAR_COVER_PX, bottom: isMobile ? Math.round(snapHeightPx(sheetSnap)) : 0 }),
     [isMobile, sheetSnap],
   )
 
@@ -315,7 +316,6 @@ function App() {
           <MapView
             places={mapPlaces}
             visitOrderByPlaceId={visitOrderByPlaceId}
-            isMobile={isMobile}
             mapPadding={mapPadding}
             focusPlace={focusPlace}
             fitPlaces={fitPlaces}

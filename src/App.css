@@ -323,9 +323,9 @@
   align-items: center;
   background: none;
   border: none;
-  padding: 5px 8px;
+  padding: 3px 8px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 12.5px;
   color: var(--text);
   border-radius: 6px;
 }
@@ -365,8 +365,8 @@
   background: none;
   color: var(--text);
   font-weight: 600;
-  font-size: 13.5px;
-  padding: 2px 6px;
+  font-size: 12.5px;
+  padding: 1px 6px;
   border-radius: 4px;
 }
 
@@ -753,7 +753,7 @@
 
 .region-count {
   font-weight: 400;
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--text-muted);
 }
 
@@ -768,7 +768,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 6px;
-  padding: 3px 8px;
+  padding: 1px 6px;
   border-radius: 6px;
 }
 
@@ -783,7 +783,7 @@
 .drag-handle {
   flex-shrink: 0;
   color: var(--text-muted);
-  font-size: 14px;
+  font-size: 12px;
   cursor: grab;
   padding: 0 2px;
 }
@@ -801,7 +801,7 @@
 }
 
 .place-name {
-  font-size: 13.5px;
+  font-size: 12px;
   color: var(--text);
   white-space: nowrap;
   overflow: hidden;
@@ -818,8 +818,8 @@
   background: none;
   border: none;
   color: var(--text-muted);
-  font-size: 13px;
-  padding: 4px 6px;
+  font-size: 11.5px;
+  padding: 2px 5px;
   border-radius: 4px;
 }
 
@@ -855,11 +855,14 @@
   position: absolute;
   top: 12px;
   left: 12px;
-  right: 12px;
   z-index: 10;
   display: flex;
   align-items: flex-start;
   gap: 8px;
+  /* Capped rather than stretched edge-to-edge -- on a wide desktop map that
+     would leave the search input growing to fill however much space is
+     left, which reads more like a bug than a toolbar. */
+  width: min(640px, calc(100% - 24px));
 }
 
 .map-topbar .search-box {
@@ -904,8 +907,8 @@
   position: absolute;
   top: 64px;
   left: 12px;
-  right: 12px;
   z-index: 9;
+  width: min(640px, calc(100% - 24px));
   padding: 0;
   border-bottom: none;
   margin-bottom: 0;
@@ -1124,7 +1127,9 @@
 
 .offline-banner {
   position: absolute;
-  top: 12px;
+  /* Clears the floating top bar + category chip row, which now sit over
+     the map on both platforms. */
+  top: 116px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 7;
@@ -1140,7 +1145,7 @@
 
 .map-location-error {
   position: absolute;
-  top: 64px;
+  top: 164px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 7;
@@ -1260,8 +1265,8 @@
 
 .day-title {
   font-weight: 600;
-  font-size: 13.5px;
-  padding: 2px 6px;
+  font-size: 12.5px;
+  padding: 1px 6px;
 }
 
 .day-summary {
@@ -1449,7 +1454,9 @@
 /* Compact day picker sitting inside each place row. */
 .place-day-select {
   flex-shrink: 0;
-  width: 34px;
+  /* Wide enough for "10일차" (the longest label MAX_DAY_COUNT produces)
+     without the closed <select> truncating it. */
+  width: 54px;
   font: inherit;
   font-size: 11px;
   padding: 1px 2px;
@@ -1918,16 +1925,10 @@
 
   /* Both rows of the floating top bar sit above these on mobile now,
      instead of the single search-box row they were originally placed under. */
-  .app-shell.mobile .offline-banner {
-    top: 116px;
-    left: 12px;
-    right: 12px;
-    transform: none;
-    max-width: none;
-  }
-
+  /* top now matches the base rule (both platforms clear the same floating
+     bar) -- only the full-bleed width is mobile-specific. */
+  .app-shell.mobile .offline-banner,
   .app-shell.mobile .map-location-error {
-    top: 164px;
     left: 12px;
     right: 12px;
     transform: none;
@@ -1993,7 +1994,7 @@
   }
 
   .place-day-select {
-    width: 46px;
+    width: 58px;
     min-height: 34px;
   }
 
@@ -2060,7 +2061,8 @@
 
 /* ---------- Account / sync sign-in ---------- */
 
-.account-control {
+.account-control,
+.default-shape-control {
   display: flex;
   flex-direction: column;
   gap: 6px;

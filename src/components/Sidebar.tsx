@@ -16,10 +16,7 @@ import { useSheetDrag, type SheetSnap } from '../hooks/useSheetDrag'
 import { ImportPlacesDialog } from './ImportPlacesDialog'
 import { TimeCell } from './TimeCell'
 import { TripPicker } from './TripPicker'
-import { SettingsMenu } from './SettingsMenu'
-import { RegionPicker } from './RegionPicker'
 import { CategoryStylePicker } from './CategoryStylePicker'
-import { CategoryFilter } from './CategoryFilter'
 
 export type { SheetSnap }
 
@@ -85,6 +82,7 @@ export function Sidebar({
   const addCategory = usePlaceStore((s) => s.addCategory)
   const renameCategory = usePlaceStore((s) => s.renameCategory)
   const removeCategory = usePlaceStore((s) => s.removeCategory)
+  const defaultMarkerShape = usePlaceStore((s) => s.defaultMarkerShape)
 
   const [styleEditCategory, setStyleEditCategory] = useState<Category | null>(null)
   const [renamingCategory, setRenamingCategory] = useState<Category | null>(null)
@@ -229,7 +227,7 @@ export function Sidebar({
 
   const handleAddCategory = () => {
     const name = nextEmptyCategoryName(Object.values(categoryLabels))
-    const id = addCategory(name, NEW_CATEGORY_STYLE)
+    const id = addCategory(name, { ...NEW_CATEGORY_STYLE, shape: defaultMarkerShape })
     setRenamingCategory(id)
     setRenameDraft(name)
   }
@@ -280,7 +278,7 @@ export function Sidebar({
           <option value="">–</option>
           {Array.from({ length: dayCount }, (_, i) => i + 1).map((d) => (
             <option key={d} value={d}>
-              {d}
+              {dayLabel(d)}
             </option>
           ))}
         </select>
@@ -379,15 +377,9 @@ export function Sidebar({
           }
         />
       )}
-      {/* On mobile these live in the floating bar over the map instead --
-          rendering them here too would just be the same controls twice. */}
-      {!sheetSnap && (
-        <div className="sidebar-header-top">
-          <RegionPicker />
-          <SettingsMenu />
-        </div>
-      )}
-
+      {/* Region select, search, settings and the category filter all live in
+          the floating bar over the map now (both platforms) -- the sidebar
+          starts directly with the trip content they'd otherwise sit above. */}
       {selectedRegion && (
         <TripPicker
           region={selectedRegion}
@@ -404,8 +396,6 @@ export function Sidebar({
           onExportTrip={handleExport}
         />
       )}
-
-      {!sheetSnap && <CategoryFilter />}
 
       {selectedTripId && (
         <div className="group-mode-row">

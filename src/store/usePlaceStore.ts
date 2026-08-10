@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import type { Category, CategoryStyle, Place, SavedRoute, Trip } from '../types'
+import type { Category, CategoryStyle, MarkerShape, Place, SavedRoute, Trip } from '../types'
 import {
   DEFAULT_CATEGORY_LABELS,
   DEFAULT_CATEGORY_ORDER,
   DEFAULT_CATEGORY_STYLES,
   FALLBACK_CATEGORY_LABEL,
   FALLBACK_CATEGORY_STYLE,
+  MARKER_SHAPES,
   MAX_DAY_COUNT,
   formatTripLabel,
   todayDateString,
@@ -20,6 +21,8 @@ const ICON_SCALE_KEY = 'travel-map.iconScale'
 const DEFAULT_ICON_SCALE = 1
 const FADED_OPACITY_KEY = 'travel-map.fadedOpacity'
 const DEFAULT_FADED_OPACITY = 0.38
+const DEFAULT_SHAPE_KEY = 'travel-map.defaultMarkerShape'
+const DEFAULT_MARKER_SHAPE: MarkerShape = 'circle'
 
 interface LegacyPlace {
   id: string
@@ -201,6 +204,22 @@ function loadFadedOpacity(): number {
   return Number.isFinite(stored) && stored > 0 && stored <= 1 ? stored : DEFAULT_FADED_OPACITY
 }
 
+function loadDefaultMarkerShape(): MarkerShape {
+  const stored = localStorage.getItem(DEFAULT_SHAPE_KEY)
+  return (MARKER_SHAPES as string[]).includes(stored ?? '') ? (stored as MarkerShape) : DEFAULT_MARKER_SHAPE
+}
+
+/**
+ * Every category defaults to visible; only an explicit toggle-off should
+ * hide one. Deriving `selectedCategories` from `categoryOrder` minus this
+ * deny-list -- instead of maintaining an allow-list some code paths have to
+ * remember to append to -- means a category that shows up via a Supabase
+ * merge (hydrate) is selected automatically, same as one created locally.
+ */
+function deriveSelectedCategories(categoryOrder: Category[], deselected: Set<Category>): Category[] {
+  return categoryOrder.filter((c) => !deselected.has(c))
+}
+
 interface PlaceStore {
   trips: Trip[]
   places: Place[]
@@ -211,6 +230,8 @@ interface PlaceStore {
   selectedRegion: string | null
   selectedTripId: string | null
   selectedCategories: Category[]
+  /** Source of truth behind `selectedCategories` -- see deriveSelectedCategories. */
+  deselectedCategories: Set<Category>
   activeAddCategory: Category | null
   /**
    * The day currently being worked on. Doubles as the map filter and as the
@@ -220,6 +241,7 @@ interface PlaceStore {
   focusedDay: number | null
   iconScale: number
   fadedOpacity: number
+  defaultMarkerShape: MarkerShape
 
   addTrip: (region: string, name: string) => Trip
   renameTrip: (id: string, name: string) => void
@@ -247,6 +269,7 @@ interface PlaceStore {
   removeCategory: (category: Category) => void
   setIconScale: (scale: number) => void
   setFadedOpacity: (opacity: number) => void
+  setDefaultMarkerShape: (shape: MarkerShape) => void
   hydrate: (data: {
     trips: Trip[]
     places: Place[]
@@ -271,10 +294,12 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   selectedRegion: null,
   selectedTripId: null,
   selectedCategories: [...initialCategories.order],
+  deselectedCategories: new Set(),
   activeAddCategory: null,
   focusedDay: null,
   iconScale: loadIconScale(),
   fadedOpacity: loadFadedOpacity(),
+  defaultMarkerShape: loadDefaultMarkerShape(),
 
   addTrip: (region, name) => {
     const trip: Trip = {
@@ -468,15 +493,15 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
   setSelectedTripId: (tripId) => set({ selectedTripId: tripId, focusedDay: null }),
 
   toggleCategoryFilter: (category) => {
-    const current = get().selectedCategories
-    const selectedCategories = current.includes(category)
-      ? current.filter((c) => c !== category)
-      : [...current, category]
-    set({ selectedCategories })
+    const deselectedCategories = new Set(get().deselectedCategories)
+    if (deselectedCategories.has(category)) deselectedCategories.delete(category)
+    else deselectedCategories.add(category)
+    set({ deselectedCategories, selectedCategories: deriveSelectedCategories(get().categoryOrder, deselectedCategories) })
   },
 
   setAllCategoriesSelected: (selected) => {
-    set({ selectedCategories: selected ? [...get().categoryOrder] : [] })
+    const deselectedCategories = selected ? new Set<Category>() : new Set(get().categoryOrder)
+    set({ deselectedCategories, selectedCategories: deriveSelectedCategories(get().categoryOrder, deselectedCategories) })
   },
 
   setCategoryStyle: (category, style) => {
@@ -498,7 +523,7 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
       categoryOrder,
       categoryLabels,
       categoryStyles,
-      selectedCategories: [...get().selectedCategories, id],
+      selectedCategories: deriveSelectedCategories(categoryOrder, get().deselectedCategories),
     })
     persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
     return id
@@ -523,10 +548,12 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     delete categoryLabels[category]
     const categoryStyles = { ...get().categoryStyles }
     delete categoryStyles[category]
-    const selectedCategories = get().selectedCategories.filter((c) => c !== category)
+    const deselectedCategories = new Set(get().deselectedCategories)
+    deselectedCategories.delete(category)
+    const selectedCategories = deriveSelectedCategories(categoryOrder, deselectedCategories)
     const activeAddCategory = get().activeAddCategory === category ? null : get().activeAddCategory
 
-    set({ categoryOrder, categoryLabels, categoryStyles, places, selectedCategories, activeAddCategory })
+    set({ categoryOrder, categoryLabels, categoryStyles, places, selectedCategories, deselectedCategories, activeAddCategory })
     persistCategories({ order: categoryOrder, labels: categoryLabels, styles: categoryStyles })
     persistPlaces(places)
   },
@@ -541,12 +568,22 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
     set({ fadedOpacity: opacity })
   },
 
+  setDefaultMarkerShape: (shape) => {
+    localStorage.setItem(DEFAULT_SHAPE_KEY, shape)
+    set({ defaultMarkerShape: shape })
+  },
+
   // Applies externally-sourced data (e.g. a Supabase merge) AND persists it,
   // unlike a raw setState which would only update memory -- leaving
   // localStorage holding the pre-merge data until some unrelated action
   // happened to persist over it.
   hydrate: ({ trips, places, routes, categoryOrder, categoryLabels, categoryStyles }) => {
-    set({ trips, places, routes, categoryOrder, categoryLabels, categoryStyles })
+    // A category arriving fresh from a sync merge was never in
+    // deselectedCategories, so it derives as selected -- keeping "every
+    // category defaults to on" true for synced categories too, not just
+    // ones created on this device.
+    const selectedCategories = deriveSelectedCategories(categoryOrder, get().deselectedCategories)
+    set({ trips, places, routes, categoryOrder, categoryLabels, categoryStyles, selectedCategories })
     persistTrips(trips)
     persistPlaces(places)
     persistRoutes(routes)

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ThemeToggle } from './ThemeToggle'
 import { IconSizeControl } from './IconSizeControl'
 import { FadedOpacityControl } from './FadedOpacityControl'
+import { DefaultShapeControl } from './DefaultShapeControl'
 import { DiagnosticsPanel } from './DiagnosticsPanel'
 import { AccountControl } from './AccountControl'
 
@@ -41,6 +42,9 @@ export function SettingsMenu() {
           </div>
           <div className="settings-menu-section">
             <FadedOpacityControl />
+          </div>
+          <div className="settings-menu-section">
+            <DefaultShapeControl />
           </div>
           <div className="settings-menu-section">
             <AccountControl />

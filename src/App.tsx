@@ -6,6 +6,7 @@ import { DeleteUndoToast } from './components/DeleteUndoToast'
 import { PwaUpdateBanner } from './components/PwaUpdateBanner'
 import { PlaceForm, draftFromPlace, type PlaceDraft } from './components/PlaceForm'
 import { PlaceStylePicker } from './components/PlaceStylePicker'
+import { AddToDaysDialog } from './components/AddToDaysDialog'
 import type { SearchResult } from './components/SearchBox'
 import type { DraftLocation } from './components/QuickAddMarker'
 import type { RouteOption } from './components/RouteModePicker'
@@ -72,6 +73,7 @@ function App() {
 
   const [editDraft, setEditDraft] = useState<PlaceDraft | null>(null)
   const [styleEditPlace, setStyleEditPlace] = useState<Place | null>(null)
+  const [addToDaysPlace, setAddToDaysPlace] = useState<Place | null>(null)
   const [draftLocation, setDraftLocation] = useState<DraftLocation | null>(null)
   const [openPlaceId, setOpenPlaceId] = useState<string | null>(null)
   const [routeOriginId, setRouteOriginId] = useState<string | null>(null)
@@ -366,6 +368,7 @@ function App() {
             onLocationPicked={handleLocationPicked}
             onEditPlace={handleEditPlace}
             onEditStyle={handleEditStyle}
+            onAddToDays={setAddToDaysPlace}
             onSaveDraft={handleSaveDraft}
             onCancelDraft={() => setDraftLocation(null)}
             onDraftNameChange={(name) => setDraftLocation((prev) => (prev ? { ...prev, name } : prev))}
@@ -381,6 +384,13 @@ function App() {
         )}
         {styleEditPlace && (
           <PlaceStylePicker place={styleEditPlace} onClose={() => setStyleEditPlace(null)} />
+        )}
+        {addToDaysPlace && (
+          <AddToDaysDialog
+            place={addToDaysPlace}
+            onClose={() => setAddToDaysPlace(null)}
+            onAdded={(count) => showHint(`${count}개 날짜에 추가했어요`)}
+          />
         )}
         <DeleteUndoToast />
         <PwaUpdateBanner />

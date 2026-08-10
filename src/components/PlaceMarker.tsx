@@ -18,6 +18,7 @@ interface PlaceMarkerProps {
   onOpenChange: (open: boolean) => void
   onEditPlace: (place: Place) => void
   onEditStyle: (place: Place) => void
+  onAddToDays: (place: Place) => void
   onRouteFrom: (place: Place) => void
 }
 
@@ -30,11 +31,11 @@ export function PlaceMarker({
   onOpenChange,
   onEditPlace,
   onEditStyle,
+  onAddToDays,
   onRouteFrom,
 }: PlaceMarkerProps) {
   const [markerRef, marker] = useAdvancedMarkerRef()
   const deletePlaceWithUndo = usePlaceStore((s) => s.deletePlaceWithUndo)
-  const duplicatePlace = usePlaceStore((s) => s.duplicatePlace)
   const updatePlace = usePlaceStore((s) => s.updatePlace)
   const trip = usePlaceStore((s) => s.trips.find((t) => t.id === place.tripId))
   const categoryLabels = usePlaceStore((s) => s.categoryLabels)
@@ -191,15 +192,14 @@ export function PlaceMarker({
                   🎨 이 장소 스타일{place.style ? ' (지정됨)' : ''}
                 </button>
                 <button
-                  title="숙소처럼 여러 번 들를 곳이나 두 번째 방문을 위해 복사본을 만들어요"
+                  title="숙소처럼 여러 날 들르는 곳을 고른 날마다 한 번에 추가해요"
                   onClick={() => {
                     setMoreOpen(false)
-                    const copy = duplicatePlace(place.id)
                     onOpenChange(false)
-                    if (copy) onEditPlace(copy)
+                    onAddToDays(place)
                   }}
                 >
-                  ⧉ 복제
+                  ⧉ 다른 날에도 추가
                 </button>
                 <button onClick={handleAiSummarize} disabled={aiLoading}>
                   {aiLoading ? <span className="btn-spinner" role="status" aria-label="AI 정리 중" /> : '🤖 AI 정리'}

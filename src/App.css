@@ -1890,6 +1890,44 @@
   background: rgba(255, 255, 255, 0.28);
 }
 
+.day-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+}
+
+.day-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.day-check:hover {
+  background: var(--chip-bg);
+}
+
+.day-check input {
+  accent-color: var(--accent);
+}
+
+/* A day this place is already on -- ticked and locked, so the same night
+   can't quietly collect a third copy. */
+.day-check.already {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.day-check-note {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
 /* ---------- Delete-undo toast (replaces the "삭제할까요?" confirm dialog) ---------- */
 
 .undo-toast {

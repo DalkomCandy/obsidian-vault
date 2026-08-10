@@ -254,6 +254,8 @@ interface PlaceStore {
   /** Copies a place (same name/location/category/etc) as a new entry -- for a
    * spot you'll visit more than once, like accommodation you return to. */
   duplicatePlace: (id: string) => Place | null
+  /** One copy per given day, in a single update. Returns how many were added. */
+  duplicatePlaceToDays: (id: string, days: number[]) => number
   updatePlace: (id: string, patch: Partial<Place>) => void
   /** Sets a per-place marker style override, independent of its category's. */
   setPlaceStyle: (id: string, style: CategoryStyle) => void
@@ -380,6 +382,22 @@ export const usePlaceStore = create<PlaceStore>((set, get) => ({
       style: place.style,
       googlePlaceId: place.googlePlaceId,
     })
+  },
+
+  duplicatePlaceToDays: (id, days) => {
+    const place = get().places.find((p) => p.id === id)
+    if (!place || days.length === 0) return 0
+    const now = new Date().toISOString()
+    const copies: Place[] = days.map((day) => ({
+      ...place,
+      id: crypto.randomUUID(),
+      createdAt: now,
+      day,
+    }))
+    const places = [...get().places, ...copies]
+    set({ places })
+    persistPlaces(places)
+    return copies.length
   },
 
   updatePlace: (id, patch) => {
